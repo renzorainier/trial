@@ -8,6 +8,19 @@ import successSound from './success.wav'; // Import the success sound
 import errorSound from './error.wav'; // Import the error sound
 import alreadyScannedSound from './alreadyscanned.wav'; // Import the already scanned sound
 
+// Define an array of message sounds for check-in and check-out modes
+const checkInMessages = [
+  'message1.wav',
+  'message2.wav',
+  'message3.wav'
+];
+
+const checkOutMessages = [
+  'message4.wav',
+  'message5.wav',
+  'message6.wav'
+];
+
 function Scan() {
   const [data, setData] = useState("");
   const [log, setLog] = useState([]);
@@ -84,7 +97,6 @@ function Scan() {
         const attendance = userData.attendance || {};
         const currentStudentName = userData.name || "Unknown";
         setStudentName(currentStudentName);
-        console.log("eto", currentStudentName);
 
         if (isCheckIn) {
           if (!attendance[dateStr]) {
@@ -93,6 +105,7 @@ function Scan() {
             console.log("Check-in successful");
             setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
             triggerVisualFeedback("bg-[#06D001]", successSound);
+            playRandomMessageSound(checkInMessages);
           } else {
             console.log("Already checked in for today");
           }
@@ -104,6 +117,7 @@ function Scan() {
               console.log("Checkout successful");
               setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
               triggerVisualFeedback("bg-[#06D001]", successSound);
+              playRandomMessageSound(checkOutMessages);
             } else {
               console.log("Already checked out");
             }
@@ -114,6 +128,7 @@ function Scan() {
             console.log("No check-in recorded but check-out successful");
             setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
             triggerVisualFeedback("bg-[#06D001]", successSound);
+            playRandomMessageSound(checkOutMessages);
           }
         }
         // Add the log entry with the current student's name
@@ -138,7 +153,7 @@ function Scan() {
         .join("");
 
       if (!decodedCode.startsWith("mvba_")) {
-        console.log("Invalid code, get better at coding boi");
+        console.log("Invalid code");
         triggerVisualFeedback("bg-[#FF0000]", errorSound);
         return;
       }
@@ -169,11 +184,11 @@ function Scan() {
         // Start a new delay timer
         delayTimerRef.current = setTimeout(() => {
           delayTimerRef.current = null;
-        }, 3000); // Set delay for 2 seconds
+        }, 3000); // Set delay for 3 seconds
       } else {
         console.log("Already scanned this code");
         const now = Date.now();
-        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) { // Check if at least 1 second has passed
+        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
@@ -215,6 +230,12 @@ function Scan() {
     setTimeout(() => setBackgroundColor("bg-gray-100"), 1000);
   };
 
+  const playRandomMessageSound = (messages) => {
+    const randomIndex = Math.floor(Math.random() * messages.length);
+    const randomSound = messages[randomIndex];
+    playSound(randomSound);
+  };
+
   return (
     <div className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6`}>
       <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6">
@@ -227,7 +248,7 @@ function Scan() {
       </div>
 
       <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
-      <div className="flex flex-col items-center justify-center mb-6">
+        <div className="flex flex-col items-center justify-center mb-6">
           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
             <p className={`text-lg font-semibold ${isCheckInMode ? 'text-green-600' : 'text-red-600'}`}>
               {isCheckInMode ? 'Check-In Mode' : 'Check-Out Mode'}
@@ -267,6 +288,7 @@ function Scan() {
 }
 
 export default Scan;
+
 
 
 
