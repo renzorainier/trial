@@ -6,6 +6,7 @@ import { mappingTable, getPhilippineTime } from "./Constants";
 import Email from "./Email"; // Import the Email component
 import successSound from './success.wav'; // Import the success sound
 import errorSound from './error.wav'; // Import the error sound
+import alreadyScannedSound from './uncomplete.wav'; // Import the already scanned sound
 
 function Scan() {
   const [data, setData] = useState("");
@@ -158,6 +159,7 @@ function Scan() {
         setCurrentDecodedCode(processedCode);
       } else {
         console.log("Already scanned this code");
+        triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
       }
     }
   };
@@ -213,7 +215,7 @@ function Scan() {
             <p className="text-lg text-blue-600 font-semibold">{data} {studentName && `(${studentName})`}</p>
           </div>
         </div>
-        <div className="bg-gray-50  rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
+        <div className="bg-gray-50 rounded-lg shadow-lg           mt-6 w-full overflow-y-scroll">
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
               <li key={`${entry.id}-${index}`} className="py-4 px-6">
