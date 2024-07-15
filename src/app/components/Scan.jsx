@@ -173,7 +173,7 @@ function Scan() {
       } else {
         console.log("Already scanned this code");
         const now = Date.now();
-        if (!delayTimerRef.current && now - lastPlayedRef.current >= 2000) { // Check if at least 1 second has passed
+        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) { // Check if at least 1 second has passed
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
