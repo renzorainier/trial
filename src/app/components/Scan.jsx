@@ -8,17 +8,25 @@ import successSound from './success.wav'; // Import the success sound
 import errorSound from './error.wav'; // Import the error sound
 import alreadyScannedSound from './alreadyscanned.wav'; // Import the already scanned sound
 
+// Import message sounds for check-in and check-out modes
+import goodMorningSound from './goodmorning.wav';
+import helloThereSound from './hellothere.wav';
+import howAreYouSound from './howareyou.wav';
+import goodbyeSound from './goodbye.wav';
+import seeYouSound from './seeyou.wav';
+import safeTravelsSound from './safetravels.wav';
+
 // Define an array of message sounds for check-in and check-out modes
 const checkInMessages = [
-  'goodmorning.wav',
-  'hellothere.wav',
-  'howareyou.wav'
+  goodMorningSound,
+  helloThereSound,
+  howAreYouSound
 ];
 
 const checkOutMessages = [
-  'goodbye.wav',
-  'seeyou.wav',
-  'safetravels.wav'
+  goodbyeSound,
+  seeYouSound,
+  safeTravelsSound
 ];
 
 function Scan() {
@@ -231,66 +239,62 @@ function Scan() {
   };
 
   const playRandomMessageSound = (messages) => {
-    const randomIndex = Math.floor(Math.random() * messages.length);
-    const randomSound = messages[randomIndex];
-    playSound(randomSound);
+  const randomIndex = Math.floor(Math.random() * messages.length);
+  const randomSound = messages[randomIndex];
+  playSound(randomSound);
   };
 
   return (
-    <div className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6`}>
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6">
-        <QrReader
-          onResult={handleResult}
-          onError={handleScanError}
-          constraints={{ facingMode: "environment" }}
-          style={{ width: "100%", height: "100%" }}
-        />
-      </div>
-
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
-        <div className="flex flex-col items-center justify-center mb-6">
-          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-            <p className={`text-lg font-semibold ${isCheckInMode ? 'text-green-600' : 'text-red-600'}`}>
-              {isCheckInMode ? 'Check-In Mode' : 'Check-Out Mode'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center mb-6">
-          <p className="text-xl font-bold text-gray-700 mb-2">Scan Result:</p>
-          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-            <p className="text-lg text-blue-600 font-semibold">{data} {studentName && `(${studentName})`}</p>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
-          <ul className="text-gray-700 divide-y divide-gray-300 w-full">
-            {log.map((entry, index) => (
-              <li key={`${entry.id}-${index}`} className="py-4 px-6">
-                <span className="block text-lg font-semibold">{entry.time}</span>
-                <span className="block text-sm">{entry.studentName}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Conditionally render the Email component */}
-        {emailData.shouldSend && (
-          <Email
-            studentName={emailData.studentName}
-            decodedCode={emailData.decodedCode}
-            onEmailSent={handleEmailSent}
-          />
-        )}
+  <div className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6`}>
+  <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6">
+  <QrReader
+  onResult={handleResult}
+  onError={handleScanError}
+  constraints={{ facingMode: "environment" }}
+  style={{ width: "100%", height: "100%" }}
+  />
+  </div>
+  <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
+    <div className="flex flex-col items-center justify-center mb-6">
+      <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+        <p className={`text-lg font-semibold ${isCheckInMode ? 'text-green-600' : 'text-red-600'}`}>
+          {isCheckInMode ? 'Check-In Mode' : 'Check-Out Mode'}
+        </p>
       </div>
     </div>
-  );
+
+    <div className="flex flex-col items-center justify-center mb-6">
+      <p className="text-xl font-bold text-gray-700 mb-2">Scan Result:</p>
+      <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+        <p className="text-lg text-blue-600 font-semibold">{data} {studentName && `(${studentName})`}</p>
+      </div>
+    </div>
+
+    <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
+      <ul className="text-gray-700 divide-y divide-gray-300 w-full">
+        {log.map((entry, index) => (
+          <li key={`${entry.id}-${index}`} className="py-4 px-6">
+            <span className="block text-lg font-semibold">{entry.time}</span>
+            <span className="block text-sm">{entry.studentName}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {/* Conditionally render the Email component */}
+    {emailData.shouldSend && (
+      <Email
+        studentName={emailData.studentName}
+        decodedCode={emailData.decodedCode}
+        onEmailSent={handleEmailSent}
+      />
+    )}
+  </div>
+</div>
+
+  )
 }
-
 export default Scan;
-
-
-
 
 
 
