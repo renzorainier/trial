@@ -4,26 +4,26 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase.js";
 import { mappingTable, getPhilippineTime } from "./Constants";
 import Email from "./Email"; // Import the Email component
-import successSound from './success.wav'; // Import the success sound
-import errorSound from './error.wav'; // Import the error sound
-import alreadyScannedSound from './alreadyscanned.wav'; // Import the already scanned sound
+import successSound from "./success.wav"; // Import the success sound
+import errorSound from "./error.wav"; // Import the error sound
+import alreadyScannedSound from "./alreadyscanned.wav"; // Import the already scanned sound
 
 // Import message sounds for check-in and check-out modes
-import complete from './complete.wav';
-const checkInMessages = [
-  complete,
-];
+import complete from "./complete.wav";
+const checkInMessages = [complete];
 
-const checkOutMessages = [
-  complete,
-];
+const checkOutMessages = [complete];
 
 function Scan() {
   const [data, setData] = useState("");
   const [log, setLog] = useState([]);
   const [studentName, setStudentName] = useState("");
   const [currentDecodedCode, setCurrentDecodedCode] = useState("");
-  const [emailData, setEmailData] = useState({ shouldSend: false, decodedCode: "", studentName: "" });
+  const [emailData, setEmailData] = useState({
+    shouldSend: false,
+    decodedCode: "",
+    studentName: "",
+  });
   const [isCheckInMode, setIsCheckInMode] = useState(null);
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
 
@@ -36,18 +36,25 @@ function Scan() {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
 
-    return (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) && currentHour < 10;
+    return (
+      (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
+      currentHour < 10
+    );
   };
 
   useEffect(() => {
     const initialCheckInMode = checkMode();
     setIsCheckInMode(initialCheckInMode);
-    console.log(`Currently in ${initialCheckInMode ? 'check-in' : 'check-out'} mode`);
+    console.log(
+      `Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`
+    );
 
     const interval = setInterval(() => {
       const currentMode = checkMode();
       if (currentMode !== isCheckInMode) {
-        console.log(`Switching to ${currentMode ? 'check-in' : 'check-out'} mode`);
+        console.log(
+          `Switching to ${currentMode ? "check-in" : "check-out"} mode`
+        );
         setIsCheckInMode(currentMode);
       }
     }, 60000);
@@ -99,7 +106,11 @@ function Scan() {
             attendance[dateStr] = { checkIn: nowStr, checkOut: null };
             await updateDoc(userDocRef, { attendance });
             console.log("Check-in successful");
-            setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
+            setEmailData({
+              shouldSend: true,
+              decodedCode,
+              studentName: currentStudentName,
+            });
             triggerVisualFeedback("bg-[#06D001]", successSound);
             playRandomMessageSound(checkInMessages);
           } else {
@@ -111,7 +122,11 @@ function Scan() {
               attendance[dateStr].checkOut = nowStr;
               await updateDoc(userDocRef, { attendance });
               console.log("Checkout successful");
-              setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
+              setEmailData({
+                shouldSend: true,
+                decodedCode,
+                studentName: currentStudentName,
+              });
               triggerVisualFeedback("bg-[#06D001]", successSound);
               playRandomMessageSound(checkOutMessages);
             } else {
@@ -122,7 +137,11 @@ function Scan() {
             attendance[dateStr] = { checkIn: null, checkOut: nowStr };
             await updateDoc(userDocRef, { attendance });
             console.log("No check-in recorded but check-out successful");
-            setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
+            setEmailData({
+              shouldSend: true,
+              decodedCode,
+              studentName: currentStudentName,
+            });
             triggerVisualFeedback("bg-[#06D001]", successSound);
             playRandomMessageSound(checkOutMessages);
           }
@@ -165,7 +184,6 @@ function Scan() {
         scannedCodesRef.current.add(processedCode);
 
         const isCheckIn = currentHour >= 6 && currentHour < 10;
-
 
         updateAttendance(processedCode, isCheckIn);
 
@@ -227,132 +245,69 @@ function Scan() {
   };
 
   const playRandomMessageSound = (messages) => {
-  const randomIndex = Math.floor(Math.random() * messages.length);
-  const randomSound = messages[randomIndex];
-  playSound(randomSound);
+    const randomIndex = Math.floor(Math.random() * messages.length);
+    const randomSound = messages[randomIndex];
+    playSound(randomSound);
   };
 
   return (
-  <div className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6`}>
-  <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6">
-  <QrReader
-  onResult={handleResult}
-  onError={handleScanError}
-  constraints={{ facingMode: "environment" }}
-  style={{ width: "100%", height: "100%" }}
-  />
-  </div>
-  <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
-    <div className="flex flex-col items-center justify-center mb-6">
-      <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-        <p className={`text-lg font-semibold ${isCheckInMode ? 'text-green-600' : 'text-red-600'}`}>
-          {isCheckInMode ? 'Check-In Mode' : 'Check-Out Mode'}
-        </p>
+    <div
+      className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6`}>
+      <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6">
+        <QrReader
+          onResult={handleResult}
+          onError={handleScanError}
+          constraints={{ facingMode: "environment" }}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </div>
+      <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
+        <div className="flex flex-col items-center justify-center mb-6">
+          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+            <p
+              className={`text-lg font-semibold ${
+                isCheckInMode ? "text-green-600" : "text-red-600"
+              }`}>
+              {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center mb-6">
+          <p className="text-xl font-bold text-gray-700 mb-2">Scan Result:</p>
+          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+            <p className="text-lg text-blue-600 font-semibold">
+              {data} {studentName && `(${studentName})`}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
+          <ul className="text-gray-700 divide-y divide-gray-300 w-full">
+            {log.map((entry, index) => (
+              <li key={`${entry.id}-${index}`} className="py-4 px-6">
+                <span className="block text-lg font-semibold">
+                  {entry.time}
+                </span>
+                <span className="block text-sm">{entry.studentName}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Conditionally render the Email component */}
+        {emailData.shouldSend && (
+          <Email
+            studentName={emailData.studentName}
+            decodedCode={emailData.decodedCode}
+            onEmailSent={handleEmailSent}
+          />
+        )}
       </div>
     </div>
-
-    <div className="flex flex-col items-center justify-center mb-6">
-      <p className="text-xl font-bold text-gray-700 mb-2">Scan Result:</p>
-      <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-        <p className="text-lg text-blue-600 font-semibold">{data} {studentName && `(${studentName})`}</p>
-      </div>
-    </div>
-
-    <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
-      <ul className="text-gray-700 divide-y divide-gray-300 w-full">
-        {log.map((entry, index) => (
-          <li key={`${entry.id}-${index}`} className="py-4 px-6">
-            <span className="block text-lg font-semibold">{entry.time}</span>
-            <span className="block text-sm">{entry.studentName}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-
-    {/* Conditionally render the Email component */}
-    {emailData.shouldSend && (
-      <Email
-        studentName={emailData.studentName}
-        decodedCode={emailData.decodedCode}
-        onEmailSent={handleEmailSent}
-      />
-    )}
-  </div>
-</div>
-
-  )
+  );
 }
 export default Scan;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //divided scanner
 // import React, { useState, useEffect } from "react";
@@ -587,4 +542,3 @@ export default Scan;
 // }
 
 // export default Scan;
-
