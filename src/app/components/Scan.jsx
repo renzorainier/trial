@@ -19,6 +19,7 @@ function Scan() {
 
   const scannedCodesRef = useRef(new Set());
   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
+  const delayTimerRef = useRef(null); // Ref to store the delay timer
 
   const checkMode = () => {
     const now = new Date();
@@ -158,10 +159,21 @@ function Scan() {
         updateAttendance(processedCode, isCheckIn);
 
         setCurrentDecodedCode(processedCode);
+
+        // Clear any existing delay timer
+        if (delayTimerRef.current) {
+          clearTimeout(delayTimerRef.current);
+          delayTimerRef.current = null;
+        }
+
+        // Start a new delay timer
+        delayTimerRef.current = setTimeout(() => {
+          delayTimerRef.current = null;
+        }, 2000); // Set delay for 2 seconds
       } else {
         console.log("Already scanned this code");
         const now = Date.now();
-        if (now - lastPlayedRef.current >= 1000) { // Check if at least 1 second has passed
+        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1000) { // Check if at least 1 second has passed
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
@@ -216,7 +228,7 @@ function Scan() {
       <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
         <div className="flex flex-col items-center justify-center mb-6">
           <p className="text-xl font-bold text-gray-700 mb-2">Scan Result:</p>
-          <div className="flex items           center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
             <p className="text-lg text-blue-600 font-semibold">{data} {studentName && `(${studentName})`}</p>
           </div>
         </div>
@@ -245,15 +257,6 @@ function Scan() {
 }
 
 export default Scan;
-
-
-
-
-
-
-
-
-
 
 
 
