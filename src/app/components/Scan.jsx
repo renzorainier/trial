@@ -6,7 +6,7 @@ import { mappingTable, getPhilippineTime } from "./Constants";
 import Email from "./Email"; // Import the Email component
 import successSound from './success.wav'; // Import the success sound
 import errorSound from './error.wav'; // Import the error sound
-import alreadyScannedSound from './uncomplete.wav'; // Import the already scanned sound
+import alreadyScannedSound from './scanned.wav'; // Import the already scanned sound
 
 function Scan() {
   const [data, setData] = useState("");
