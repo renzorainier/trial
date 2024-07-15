@@ -18,7 +18,6 @@ function Scan() {
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
 
   const scannedCodesRef = useRef(new Set());
-  const lastFeedbackTimeRef = useRef(0); // Ref to track last feedback time
 
   const checkMode = () => {
     const now = new Date();
@@ -194,10 +193,6 @@ function Scan() {
   };
 
   const triggerVisualFeedback = (color, sound) => {
-    const now = Date.now();
-    if (now - lastFeedbackTimeRef.current < 1000) return; // Prevent feedback if called within 1 second
-    lastFeedbackTimeRef.current = now;
-
     setBackgroundColor(color);
     playSound(sound);
     setTimeout(() => setBackgroundColor("bg-gray-100"), 1000);
@@ -220,7 +215,7 @@ function Scan() {
             <p className="text-lg text-blue-600 font-semibold">{data} {studentName && `(${studentName})`}</p>
           </div>
         </div>
-        <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
+        <div className="bg-gray-50 rounded-lg shadow-lg           mt-6 w-full overflow-y-scroll">
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
               <li key={`${entry.id}-${index}`} className="py-4 px-6">
