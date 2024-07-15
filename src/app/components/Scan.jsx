@@ -284,6 +284,62 @@ export default Scan;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //divided scanner
 // import React, { useState, useEffect } from "react";
 // import { doc, getDoc, updateDoc } from "firebase/firestore";
