@@ -1,4 +1,3 @@
-// Scan.jsx
 import React, { useState, useEffect } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase.js";
@@ -180,6 +179,11 @@ function Scan() {
     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
   };
 
+  const playSound = (sound) => {
+    const audio = new Audio(sound);
+    audio.play();
+  };
+
   const triggerVisualFeedback = (color, sound) => {
     setBackgroundColor(color);
     playSound(sound);
@@ -205,7 +209,7 @@ function Scan() {
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
               <li key={`${entry.id}-${index}`} className="py-4 px-6">
-                <span className="block text-lg font-semibold">{entry.time}</span>
+                     <span className="block text-lg font-semibold">{entry.time}</span>
                 <span className="block text-sm">{entry.studentName}</span>
               </li>
             ))}
