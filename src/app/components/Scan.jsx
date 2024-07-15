@@ -242,8 +242,6 @@ function Scan() {
           </div>
         </div>
 
-        {/* Check-In/Check-Out Mode Indicator */}
-
         <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
