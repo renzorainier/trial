@@ -41,6 +41,7 @@ function Scan() {
       currentHour < 10
     );
   };
+  //try land
 
   useEffect(() => {
     const initialCheckInMode = checkMode();
