@@ -5,8 +5,6 @@ import { db } from "./firebase.js";
 import { mappingTable, getPhilippineTime } from "./Constants";
 import Email from "./Email"; // Import the Email component
 import successSound from './success.wav'; // Import the success sound
-import complete from './complete.wav'; // Import the success sound
-import uncomplete from './uncomplete.wav'; // Import the success sound
 import errorSound from './error.wav'; // Import the error sound
 
 function Scan() {
