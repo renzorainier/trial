@@ -251,7 +251,7 @@ function Scan() {
   };
 
   return (
-    <div className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6 bg-gray-200`}>
+    <div className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6 bg-gray-200`}>
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
         <QrReader
           onResult={handleResult}
