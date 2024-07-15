@@ -225,13 +225,25 @@ function Scan() {
           style={{ width: "100%", height: "100%" }}
         />
       </div>
+
       <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
+      <div className="flex flex-col items-center justify-center mb-6">
+          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+            <p className={`text-lg font-semibold ${isCheckInMode ? 'text-green-600' : 'text-red-600'}`}>
+              {isCheckInMode ? 'Check-In Mode' : 'Check-Out Mode'}
+            </p>
+          </div>
+        </div>
+
         <div className="flex flex-col items-center justify-center mb-6">
           <p className="text-xl font-bold text-gray-700 mb-2">Scan Result:</p>
           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
             <p className="text-lg text-blue-600 font-semibold">{data} {studentName && `(${studentName})`}</p>
           </div>
         </div>
+
+        {/* Check-In/Check-Out Mode Indicator */}
+
         <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
@@ -257,6 +269,8 @@ function Scan() {
 }
 
 export default Scan;
+
+
 
 
 
