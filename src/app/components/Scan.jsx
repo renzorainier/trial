@@ -9,24 +9,24 @@ import errorSound from './error.wav'; // Import the error sound
 import alreadyScannedSound from './alreadyscanned.wav'; // Import the already scanned sound
 
 // Import message sounds for check-in and check-out modes
-import goodMorningSound from './goodmorning.wav';
-import helloThereSound from './hellothere.wav';
-import howAreYouSound from './howareyou.wav';
-import goodbyeSound from './goodbye.wav';
-import seeYouSound from './seeyou.wav';
-import safeTravelsSound from './safetravels.wav';
+import complete from './complete.wav';
+// import helloThereSound from './hellothere.wav';
+// import howAreYouSound from './howareyou.wav';
+// import goodbyeSound from './goodbye.wav';
+// import seeYouSound from './seeyou.wav';
+// import safeTravelsSound from './safetravels.wav';
 
 // Define an array of message sounds for check-in and check-out modes
 const checkInMessages = [
-  goodMorningSound,
-  helloThereSound,
-  howAreYouSound
+  complete,
+  // helloThereSound,
+  // howAreYouSound
 ];
 
 const checkOutMessages = [
-  goodbyeSound,
-  seeYouSound,
-  safeTravelsSound
+  complete,
+  // seeYouSound,
+  // safeTravelsSound
 ];
 
 function Scan() {
