@@ -61,7 +61,7 @@ function Scan() {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
 
-      if (currentHour === 14 && currentMinute === 50) {
+      if (currentHour === 16 && currentMinute === 3) {
         cleanup();
       }
     }, 60000); // Check every minute
@@ -164,8 +164,8 @@ function Scan() {
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
 
-        const isCheckIn = (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
-          (currentHour < 13 || (currentHour === 14 && currentMinute < 50));
+        const isCheckIn = currentHour >= 6 && currentHour < 10;
+
 
         updateAttendance(processedCode, isCheckIn);
 
