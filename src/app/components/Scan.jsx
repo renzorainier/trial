@@ -251,16 +251,16 @@ function Scan() {
   };
 
   return (
-    <div className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6`}>
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6">
+    <div className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6 bg-gray-200`}>
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
         <QrReader
           onResult={handleResult}
           onError={handleScanError}
           constraints={{ facingMode: "environment" }}
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "100%", borderRadius: "8px" }}
         />
       </div>
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full flex flex-col items-center transition-transform transform hover:scale-105">
         <div className="flex flex-col items-center justify-center mb-6">
           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
             <p className={`text-lg font-semibold ${isCheckInMode ? "text-green-600" : "text-red-600"}`}>
@@ -270,7 +270,7 @@ function Scan() {
         </div>
 
         <div className="flex flex-col items-center justify-center mb-6">
-          <p className="text-xl font-bold text-gray-700 mb-2">Scan Result:</p>
+          <p className="text-xl font-bold text-gray-800 mb-2">Scan Result:</p>
           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
             <p className="text-lg text-blue-600 font-semibold">
               {data} {studentName && `(${studentName})`}
