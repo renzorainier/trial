@@ -18,6 +18,7 @@ function Scan() {
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
 
   const scannedCodesRef = useRef(new Set());
+  const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
 
   const checkMode = () => {
     const now = new Date();
@@ -159,7 +160,11 @@ function Scan() {
         setCurrentDecodedCode(processedCode);
       } else {
         console.log("Already scanned this code");
-        triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
+        const now = Date.now();
+        if (now - lastPlayedRef.current >= 1000) { // Check if at least 1 second has passed
+          triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
+          lastPlayedRef.current = now;
+        }
       }
     }
   };
@@ -211,11 +216,11 @@ function Scan() {
       <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
         <div className="flex flex-col items-center justify-center mb-6">
           <p className="text-xl font-bold text-gray-700 mb-2">Scan Result:</p>
-          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+          <div className="flex items           center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
             <p className="text-lg text-blue-600 font-semibold">{data} {studentName && `(${studentName})`}</p>
           </div>
         </div>
-        <div className="bg-gray-50 rounded-lg shadow-lg           mt-6 w-full overflow-y-scroll">
+        <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
               <li key={`${entry.id}-${index}`} className="py-4 px-6">
@@ -240,6 +245,7 @@ function Scan() {
 }
 
 export default Scan;
+
 
 
 
