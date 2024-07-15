@@ -10,23 +10,12 @@ import alreadyScannedSound from './alreadyscanned.wav'; // Import the already sc
 
 // Import message sounds for check-in and check-out modes
 import complete from './complete.wav';
-// import helloThereSound from './hellothere.wav';
-// import howAreYouSound from './howareyou.wav';
-// import goodbyeSound from './goodbye.wav';
-// import seeYouSound from './seeyou.wav';
-// import safeTravelsSound from './safetravels.wav';
-
-// Define an array of message sounds for check-in and check-out modes
 const checkInMessages = [
   complete,
-  // helloThereSound,
-  // howAreYouSound
 ];
 
 const checkOutMessages = [
   complete,
-  // seeYouSound,
-  // safeTravelsSound
 ];
 
 function Scan() {
