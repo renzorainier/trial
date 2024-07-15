@@ -251,8 +251,7 @@ function Scan() {
   };
 
   return (
-    <div
-      className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6`}>
+    <div className={`${backgroundColor} flex flex-col lg:flex-row items-center justify-center min-h-screen p-6`}>
       <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6">
         <QrReader
           onResult={handleResult}
@@ -264,10 +263,7 @@ function Scan() {
       <div className="bg-white rounded-lg shadow-xl p-8 w-full lg:w-1/2 h-full flex flex-col items-center">
         <div className="flex flex-col items-center justify-center mb-6">
           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-            <p
-              className={`text-lg font-semibold ${
-                isCheckInMode ? "text-green-600" : "text-red-600"
-              }`}>
+            <p className={`text-lg font-semibold ${isCheckInMode ? "text-green-600" : "text-red-600"}`}>
               {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
             </p>
           </div>
@@ -282,7 +278,7 @@ function Scan() {
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll">
+        <div className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll" style={{ maxHeight: "300px" }}>
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
               <li key={`${entry.id}-${index}`} className="py-4 px-6">
@@ -295,7 +291,6 @@ function Scan() {
           </ul>
         </div>
 
-        {/* Conditionally render the Email component */}
         {emailData.shouldSend && (
           <Email
             studentName={emailData.studentName}
@@ -306,6 +301,7 @@ function Scan() {
       </div>
     </div>
   );
+
 }
 export default Scan;
 
