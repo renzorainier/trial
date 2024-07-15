@@ -36,8 +36,7 @@ function Scan() {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
 
-    return (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
-      (currentHour < 13 || (currentHour === 14 && currentMinute < 50));
+    return (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) && currentHour < 10;
   };
 
   useEffect(() => {
