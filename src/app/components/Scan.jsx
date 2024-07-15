@@ -10,15 +10,15 @@ import alreadyScannedSound from './alreadyscanned.wav'; // Import the already sc
 
 // Define an array of message sounds for check-in and check-out modes
 const checkInMessages = [
-  'complete.wav',
-  'complete.wav',
-  'complete.wav'
+  'goodmorning.wav',
+  'hellothere.wav',
+  'howareyou.wav'
 ];
 
 const checkOutMessages = [
-  'message4.wav',
-  'message5.wav',
-  'message6.wav'
+  'goodbye.wav',
+  'seeyou.wav',
+  'safetravels.wav'
 ];
 
 function Scan() {
