@@ -169,7 +169,7 @@ function Scan() {
         // Start a new delay timer
         delayTimerRef.current = setTimeout(() => {
           delayTimerRef.current = null;
-        }, 2000); // Set delay for 2 seconds
+        }, 3000); // Set delay for 2 seconds
       } else {
         console.log("Already scanned this code");
         const now = Date.now();
