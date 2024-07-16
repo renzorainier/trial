@@ -3,12 +3,13 @@ import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase.js";
 import { mappingTable, getPhilippineTime } from "./Constants";
-import Email from "./Email";
-import successSound from "./success.wav";
-import errorSound from "./error.wav";
-import alreadyScannedSound from "./alreadyscanned.wav";
-import complete from "./complete.wav";
+import Email from "./Email"; // Import the Email component
+import successSound from "./success.wav"; // Import the success sound
+import errorSound from "./error.wav"; // Import the error sound
+import alreadyScannedSound from "./alreadyscanned.wav"; // Import the already scanned sound
 
+// Import message sounds for check-in and check-out modes
+import complete from "./complete.wav";
 const checkInMessages = [complete];
 const checkOutMessages = [complete];
 
@@ -23,29 +24,35 @@ function Scan() {
     studentName: "",
   });
   const [isCheckInMode, setIsCheckInMode] = useState(null);
-  const [backgroundColor, setBackgroundColor] = useState("bg-gray-100");
+  const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
 
   const scannedCodesRef = useRef(new Set());
-  const lastPlayedRef = useRef(0);
-  const delayTimerRef = useRef(null);
+  const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
+  const delayTimerRef = useRef(null); // Ref to store the delay timer
 
   const checkMode = () => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-
-    return currentHour >= 6 && currentHour < 10;
+    return (
+      (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
+      currentHour < 10
+    );
   };
 
   useEffect(() => {
     const initialCheckInMode = checkMode();
     setIsCheckInMode(initialCheckInMode);
-    console.log(`Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`);
+    console.log(
+      `Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`
+    );
 
     const interval = setInterval(() => {
       const currentMode = checkMode();
       if (currentMode !== isCheckInMode) {
-        console.log(`Switching to ${currentMode ? "check-in" : "check-out"} mode`);
+        console.log(
+          `Switching to ${currentMode ? "check-in" : "check-out"} mode`
+        );
         setIsCheckInMode(currentMode);
       }
     }, 60000);
@@ -62,9 +69,9 @@ function Scan() {
       if (currentHour === 16 && currentMinute === 3) {
         cleanup();
       }
-    }, 60000);
+    }, 60000); // Check every minute
 
-    return () => clearInterval(cleanupInterval);
+    return () => clearInterval(cleanupInterval); // Cleanup the interval on component unmount
   }, []);
 
   const cleanup = () => {
@@ -124,6 +131,7 @@ function Scan() {
               console.log("Already checked out");
             }
           } else {
+            // No check-in recorded but it's check-out time, record check-out
             attendance[dateStr] = { checkIn: null, checkOut: nowStr };
             await updateDoc(userDocRef, { attendance });
             console.log("No check-in recorded but check-out successful");
@@ -136,11 +144,12 @@ function Scan() {
             playRandomMessageSound(checkOutMessages);
           }
         }
+        // Add the log entry with the current student's name
         addLogEntry(decodedCode, currentStudentName);
       } else {
         console.log("No document found for this student ID");
         triggerVisualFeedback("bg-[#FF0000]", errorSound);
-        return;
+        return; // Stop the process if no document is found
       }
     } catch (error) {
       console.error("Error updating attendance: ", error);
@@ -151,7 +160,10 @@ function Scan() {
   const handleResult = (result) => {
     if (!!result) {
       const code = result.text;
-      const decodedCode = code.split("").map((char) => mappingTable[char] || "").join("");
+      const decodedCode = code
+        .split("")
+        .map((char) => mappingTable[char] || "")
+        .join("");
 
       if (!decodedCode.startsWith("mvba_")) {
         console.log("Invalid code");
@@ -166,19 +178,20 @@ function Scan() {
         scannedCodesRef.current.add(processedCode);
 
         const isCheckIn = checkMode();
-
         updateAttendance(processedCode, isCheckIn);
 
         setCurrentDecodedCode(processedCode);
 
+        // Clear any existing delay timer
         if (delayTimerRef.current) {
           clearTimeout(delayTimerRef.current);
           delayTimerRef.current = null;
         }
 
+        // Start a new delay timer
         delayTimerRef.current = setTimeout(() => {
           delayTimerRef.current = null;
-        }, 3000);
+        }, 3000); // Set delay for 3 seconds
       } else {
         console.log("Already scanned this code");
         const now = Date.now();
@@ -231,7 +244,8 @@ function Scan() {
   };
 
   return (
-    <div className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
+    <div
+      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6 `}>
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
         <QrReader
           onResult={handleResult}
@@ -243,8 +257,11 @@ function Scan() {
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full flex flex-col items-center transition-transform transform hover:scale-105">
         <div className="flex flex-col items-center justify-center mb-6">
           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-            <p className={`text-lg font-semibold ${isCheckInMode ? "text-green-600" : "text-red-600"}`}>
-            {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
+            <p
+              className={`text-lg font-semibold ${
+                isCheckInMode ? "text-green-600" : "text-red-600"
+              }`}>
+              {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
             </p>
           </div>
         </div>
@@ -264,7 +281,9 @@ function Scan() {
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
               <li key={`${entry.id}-${index}`} className="py-4 px-6">
-                <span className="block text-lg font-semibold">{entry.time}</span>
+                <span className="block text-lg font-semibold">
+                  {entry.time}
+                </span>
                 <span className="block text-sm">{entry.studentName}</span>
               </li>
             ))}
@@ -284,9 +303,6 @@ function Scan() {
 }
 
 export default Scan;
-
-
-
 
 
 
