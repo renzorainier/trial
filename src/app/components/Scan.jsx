@@ -244,7 +244,46 @@ function Scan() {
         <div className="flex flex-col items-center justify-center mb-6">
           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
             <p className={`text-lg font-semibold ${isCheckInMode ? "text-green-600" : "text-red-600"}`}>
-              {isCheckInMode ?
+            {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center mb-6">
+          <p className="text-xl font-bold text-gray-800 mb-2">Scan Result:</p>
+          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+            <p className="text-lg text-blue-600 font-semibold">
+              {data} {studentName && `(${studentName})`}
+            </p>
+          </div>
+        </div>
+
+        <div
+          className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll"
+          style={{ maxHeight: "300px" }}>
+          <ul className="text-gray-700 divide-y divide-gray-300 w-full">
+            {log.map((entry, index) => (
+              <li key={`${entry.id}-${index}`} className="py-4 px-6">
+                <span className="block text-lg font-semibold">{entry.time}</span>
+                <span className="block text-sm">{entry.studentName}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {emailData.shouldSend && (
+          <Email
+            studentName={emailData.studentName}
+            decodedCode={emailData.decodedCode}
+            onEmailSent={handleEmailSent}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default Scan;
 
 
 
