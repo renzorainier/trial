@@ -89,8 +89,12 @@ function Scan() {
   };
 
   const updateAttendance = async (decodedCode, isCheckIn) => {
+    console.log("processing code", decodedCode);
     try {
+      console.log("processing code again", decodedCode);
       const userDocRef = doc(db, "users", decodedCode);
+      console.log("processing code again and again", decodedCode);
+
       console.log(`Reading from Firebase: ${decodedCode}`);
       const userDocSnap = await getDoc(userDocRef);
       console.log(`Firebase read complete for ${decodedCode}`);
