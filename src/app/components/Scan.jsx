@@ -10,6 +10,10 @@
 // import alreadyScannedSound from "./alreadyscanned.wav";
 // import complete from "./complete.wav";
 
+//how can i import the sound files?
+
+
+
 // const checkInMessages = [complete];
 // const checkOutMessages = [complete];
 
