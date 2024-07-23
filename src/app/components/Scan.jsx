@@ -164,7 +164,6 @@ function Scan() {
       triggerVisualFeedback("bg-[#FF0000]", errorSound);
     }
   };
-
   const handleResult = (result) => {
     if (!!result) {
       const code = result.text;
