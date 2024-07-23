@@ -28,6 +28,7 @@ function Scan() {
 
   const scannedCodesRef = useRef(new Set());
   const processingCodesRef = useRef(new Set());
+  const isProcessingRef = useRef(false); // Ref to prevent multiple reads
   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
   const delayTimerRef = useRef(null); // Ref to store the delay timer
 
@@ -80,6 +81,7 @@ function Scan() {
     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
     scannedCodesRef.current.clear();
     processingCodesRef.current.clear();
+    isProcessingRef.current = false;
   };
 
   const updateAttendance = async (decodedCode, isCheckIn) => {
@@ -144,6 +146,7 @@ function Scan() {
         }
         // Add the log entry with the current student's name
         addLogEntry(decodedCode, currentStudentName);
+        scannedCodesRef.current.add(decodedCode); // Add code to scanned set after successful processing
       } else {
         console.log("No document found for this student ID");
         triggerVisualFeedback("bg-[#FF0000]", errorSound);
@@ -154,11 +157,13 @@ function Scan() {
       triggerVisualFeedback("bg-[#FF0000]", errorSound);
     } finally {
       processingCodesRef.current.delete(decodedCode);
+      isProcessingRef.current = false; // Reset the processing flag
     }
   };
 
   const handleResult = (result) => {
-    if (!!result) {
+    if (!!result && !isProcessingRef.current) { // Check if a process is already ongoing
+      isProcessingRef.current = true; // Set processing flag
       const code = result.text;
       const decodedCode = code
         .split("")
@@ -168,6 +173,7 @@ function Scan() {
       if (!decodedCode.startsWith("mvba_")) {
         console.log("Invalid code");
         triggerVisualFeedback("bg-[#FF0000]", errorSound);
+        isProcessingRef.current = false; // Reset processing flag
         return;
       }
 
@@ -175,7 +181,6 @@ function Scan() {
 
       if (!scannedCodesRef.current.has(processedCode) && !processingCodesRef.current.has(processedCode)) {
         setData(processedCode);
-        scannedCodesRef.current.add(processedCode);
         processingCodesRef.current.add(processedCode);
 
         const isCheckIn = checkMode();
@@ -200,6 +205,7 @@ function Scan() {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
+        isProcessingRef.current = false; // Reset processing flag
       }
     }
   };
@@ -221,6 +227,7 @@ function Scan() {
   const handleScanError = (error) => {
     console.error("QR Scan Error:", error);
     triggerVisualFeedback("bg-[#FF0000]", errorSound);
+    isProcessingRef.current = false; // Reset processing flag
   };
 
   const handleEmailSent = () => {
@@ -246,7 +253,7 @@ function Scan() {
 
   return (
     <div
-      className={`${backgroundColor} flex flex-col lg       -flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
+      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
         <QrReader
           onResult={handleResult}
@@ -297,7 +304,6 @@ function Scan() {
 }
 
 export default Scan;
-
 
 
 //special thanks to this chhuchu
