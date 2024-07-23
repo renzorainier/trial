@@ -25,10 +25,10 @@ function Scan() {
   });
   const [isCheckInMode, setIsCheckInMode] = useState(null);
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
+  const [qrScannerEnabled, setQrScannerEnabled] = useState(true); // State to enable/disable QR scanner
 
   const scannedCodesRef = useRef(new Set());
   const processingCodesRef = useRef(new Set());
-  const isProcessingRef = useRef(false); // Ref to prevent multiple reads
   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
   const delayTimerRef = useRef(null); // Ref to store the delay timer
 
@@ -81,7 +81,7 @@ function Scan() {
     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
     scannedCodesRef.current.clear();
     processingCodesRef.current.clear();
-    isProcessingRef.current = false;
+    setQrScannerEnabled(true);
   };
 
   const updateAttendance = async (decodedCode, isCheckIn) => {
@@ -157,13 +157,13 @@ function Scan() {
       triggerVisualFeedback("bg-[#FF0000]", errorSound);
     } finally {
       processingCodesRef.current.delete(decodedCode);
-      isProcessingRef.current = false; // Reset the processing flag
+      setQrScannerEnabled(true); // Re-enable QR scanner
     }
   };
 
   const handleResult = (result) => {
-    if (!!result && !isProcessingRef.current) { // Check if a process is already ongoing
-      isProcessingRef.current = true; // Set processing flag
+    if (!!result && qrScannerEnabled) { // Check if QR scanner is enabled
+      setQrScannerEnabled(false); // Disable QR scanner during processing
       const code = result.text;
       const decodedCode = code
         .split("")
@@ -173,7 +173,7 @@ function Scan() {
       if (!decodedCode.startsWith("mvba_")) {
         console.log("Invalid code");
         triggerVisualFeedback("bg-[#FF0000]", errorSound);
-        isProcessingRef.current = false; // Reset processing flag
+        setQrScannerEnabled(true); // Re-enable QR scanner on invalid code
         return;
       }
 
@@ -205,7 +205,7 @@ function Scan() {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
-        isProcessingRef.current = false; // Reset processing flag
+        setQrScannerEnabled(true); // Re-enable QR scanner if code already scanned
       }
     }
   };
@@ -227,7 +227,7 @@ function Scan() {
   const handleScanError = (error) => {
     console.error("QR Scan Error:", error);
     triggerVisualFeedback("bg-[#FF0000]", errorSound);
-    isProcessingRef.current = false; // Reset processing flag
+    setQrScannerEnabled(true); // Re-enable QR scanner on scan error
   };
 
   const handleEmailSent = () => {
@@ -255,12 +255,14 @@ function Scan() {
     <div
       className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
-        <QrReader
-          onResult={handleResult}
-          onError={handleScanError}
-          constraints={{ facingMode: "environment" }}
-          style={{ width: "100%", height: "100%", borderRadius: "8px" }}
-        />
+        {qrScannerEnabled && (
+          <QrReader
+            onResult={handleResult}
+            onError={handleScanError}
+            constraints={{ facingMode: "environment" }}
+            style={{ width: "100%", height: "100%", borderRadius: "8px" }}
+          />
+        )}
       </div>
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full flex flex-col items-center transition-transform transform hover:scale-105">
         <div className="flex flex-col items-center justify-center mb-6">
@@ -304,7 +306,6 @@ function Scan() {
 }
 
 export default Scan;
-
 
 //special thanks to this chhuchu
 // import React, { useState, useRef, useEffect } from "react";
