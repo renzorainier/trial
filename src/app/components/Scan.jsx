@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -11,6 +12,7 @@ import alreadyScannedSound from "./alreadyscanned.wav"; // Import the already sc
 // Import message sounds for check-in and check-out modes
 import complete from "./complete.wav";
 const checkInMessages = [complete];
+
 const checkOutMessages = [complete];
 
 function Scan() {
@@ -34,21 +36,27 @@ function Scan() {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
+
     return (
       (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
       currentHour < 10
     );
   };
+  //try lan
 
   useEffect(() => {
     const initialCheckInMode = checkMode();
     setIsCheckInMode(initialCheckInMode);
-    console.log(`Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`);
+    console.log(
+      `Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`
+    );
 
     const interval = setInterval(() => {
       const currentMode = checkMode();
       if (currentMode !== isCheckInMode) {
-        console.log(`Switching to ${currentMode ? "check-in" : "check-out"} mode`);
+        console.log(
+          `Switching to ${currentMode ? "check-in" : "check-out"} mode`
+        );
         setIsCheckInMode(currentMode);
       }
     }, 60000);
@@ -169,11 +177,16 @@ function Scan() {
 
       const processedCode = decodedCode.slice(5);
 
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
       if (!scannedCodesRef.current.has(processedCode)) {
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
 
-        const isCheckIn = checkMode();
+        const isCheckIn = currentHour >= 6 && currentHour < 10;
+
         updateAttendance(processedCode, isCheckIn);
 
         setCurrentDecodedCode(processedCode);
@@ -241,7 +254,7 @@ function Scan() {
 
   return (
     <div
-      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
+      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6 `}>
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
         <QrReader
           onResult={handleResult}
@@ -297,7 +310,6 @@ function Scan() {
     </div>
   );
 }
-
 export default Scan;
 
 
