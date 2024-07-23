@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -12,7 +11,6 @@ import alreadyScannedSound from "./alreadyscanned.wav"; // Import the already sc
 // Import message sounds for check-in and check-out modes
 import complete from "./complete.wav";
 const checkInMessages = [complete];
-
 const checkOutMessages = [complete];
 
 function Scan() {
@@ -29,6 +27,7 @@ function Scan() {
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
 
   const scannedCodesRef = useRef(new Set());
+  const processingCodesRef = useRef(new Set());
   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
   const delayTimerRef = useRef(null); // Ref to store the delay timer
 
@@ -36,27 +35,21 @@ function Scan() {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-
     return (
       (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
       currentHour < 10
     );
   };
-  //try lan
 
   useEffect(() => {
     const initialCheckInMode = checkMode();
     setIsCheckInMode(initialCheckInMode);
-    console.log(
-      `Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`
-    );
+    console.log(`Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`);
 
     const interval = setInterval(() => {
       const currentMode = checkMode();
       if (currentMode !== isCheckInMode) {
-        console.log(
-          `Switching to ${currentMode ? "check-in" : "check-out"} mode`
-        );
+        console.log(`Switching to ${currentMode ? "check-in" : "check-out"} mode`);
         setIsCheckInMode(currentMode);
       }
     }, 60000);
@@ -86,15 +79,12 @@ function Scan() {
     setCurrentDecodedCode("");
     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
     scannedCodesRef.current.clear();
+    processingCodesRef.current.clear();
   };
 
   const updateAttendance = async (decodedCode, isCheckIn) => {
-    console.log("processing code", decodedCode);
     try {
-      console.log("processing code again", decodedCode);
       const userDocRef = doc(db, "users", decodedCode);
-      console.log("processing code again again", decodedCode);
-
       console.log(`Reading from Firebase: ${decodedCode}`);
       const userDocSnap = await getDoc(userDocRef);
       console.log(`Firebase read complete for ${decodedCode}`);
@@ -162,8 +152,12 @@ function Scan() {
     } catch (error) {
       console.error("Error updating attendance: ", error);
       triggerVisualFeedback("bg-[#FF0000]", errorSound);
+    } finally {
+      // Remove the code from the processing set after operation completes
+      processingCodesRef.current.delete(decodedCode);
     }
   };
+
   const handleResult = (result) => {
     if (!!result) {
       const code = result.text;
@@ -180,16 +174,12 @@ function Scan() {
 
       const processedCode = decodedCode.slice(5);
 
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-
-      if (!scannedCodesRef.current.has(processedCode)) {
+      if (!scannedCodesRef.current.has(processedCode) && !processingCodesRef.current.has(processedCode)) {
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
+        processingCodesRef.current.add(processedCode); // Mark the code as being processed
 
-        const isCheckIn = currentHour >= 6 && currentHour < 10;
-
+        const isCheckIn = checkMode();
         updateAttendance(processedCode, isCheckIn);
 
         setCurrentDecodedCode(processedCode);
@@ -205,7 +195,7 @@ function Scan() {
           delayTimerRef.current = null;
         }, 3000); // Set delay for 3 seconds
       } else {
-        console.log("Already scanned this code");
+        console.log("Already scanned or currently processing this code");
         const now = Date.now();
         if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
@@ -257,7 +247,7 @@ function Scan() {
 
   return (
     <div
-      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6 `}>
+      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
         <QrReader
           onResult={handleResult}
@@ -313,7 +303,9 @@ function Scan() {
     </div>
   );
 }
+
 export default Scan;
+
 
 
 
