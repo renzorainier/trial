@@ -31,7 +31,8 @@ const Email = ({ studentName, decodedCode, onEmailSent }) => {
       const firstName = studentName.split(",")[1].trim();
 
       const isArrival = (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
-                        (currentHour < 13 || (currentHour === 14 && currentMinute < 50));
+      currentHour < 10;
+
       const title = `${firstName} has ${isArrival ? "arrived" : "left"}`;
       const subject = `${isArrival ? "Arrival" : "Departure"} Log - ${dateToday}`;
       const message = `${studentName} has ${isArrival ? "arrived" : "left"} safely at ${currentTime}.`;
