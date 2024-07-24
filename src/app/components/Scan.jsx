@@ -90,7 +90,7 @@ function Scan() {
   const updateAttendance = async (decodedCode, isCheckIn) => {
     try {
       const userDocRef = doc(db, "users", decodedCode);
-      console.log(`Reading from Firebase: ${decodedCode}`);
+      console.log(`Attempting to read from Firebase for decodedCode: ${decodedCode}`);
       const userDocSnap = await getDoc(userDocRef);
       console.log(`Firebase read complete for ${decodedCode}`);
       const nowStr = getPhilippineTime();
@@ -134,7 +134,6 @@ function Scan() {
               console.log("Already checked out");
             }
           } else {
-            // No check-in recorded but it's check-out time, record check-out
             attendance[dateStr] = { checkIn: null, checkOut: nowStr };
             await updateDoc(userDocRef, { attendance });
             console.log("No check-in recorded but check-out successful");
@@ -147,12 +146,11 @@ function Scan() {
             playRandomMessageSound(checkOutMessages);
           }
         }
-        // Add the log entry with the current student's name
         addLogEntry(decodedCode, currentStudentName);
       } else {
         console.log("No document found for this student ID");
         triggerVisualFeedback("bg-[#FF0000]", errorSound);
-        return; // Stop the process if no document is found
+        return;
       }
     } catch (error) {
       console.error("Error updating attendance: ", error);
@@ -160,9 +158,11 @@ function Scan() {
     }
   };
 
+
   const handleResult = (result) => {
     if (!!result) {
       const code = result.text;
+      console.log(`QR code detected: ${code}`);
       const decodedCode = code
         .split("")
         .map((char) => mappingTable[char] || "")
@@ -176,30 +176,24 @@ function Scan() {
 
       const processedCode = decodedCode.slice(5);
 
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-
       if (!scannedCodesRef.current.has(processedCode)) {
+        console.log(`New QR code scan: ${processedCode}`);
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
 
-        const isCheckIn = currentHour >= 6 && currentHour < 10;
-
+        const isCheckIn = checkMode(); // Update to use checkMode function
         updateAttendance(processedCode, isCheckIn);
 
         setCurrentDecodedCode(processedCode);
 
-        // Clear any existing delay timer
         if (delayTimerRef.current) {
           clearTimeout(delayTimerRef.current);
           delayTimerRef.current = null;
         }
 
-        // Start a new delay timer
         delayTimerRef.current = setTimeout(() => {
           delayTimerRef.current = null;
-        }, 3000); // Set delay for 3 seconds
+        }, 3000);
       } else {
         console.log("Already scanned this code");
         const now = Date.now();
@@ -210,6 +204,7 @@ function Scan() {
       }
     }
   };
+
 
   const addLogEntry = (processedCode, studentName) => {
     const newLogEntry = {
