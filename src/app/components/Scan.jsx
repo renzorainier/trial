@@ -250,7 +250,6 @@ function Scan() {
     const randomSound = messages[randomIndex];
     playSound(randomSound);
   };
-
   return (
     <div
       className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
