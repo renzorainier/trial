@@ -6,6 +6,12 @@ import { mappingTable, getPhilippineTime } from "./Constants";
 import Email from "./Email"; // Import the Email component
 import successSound from "./success.wav"; // Import the success sound
 import errorSound from "./error.wav"; // Import the error sound
+import alreadyScannedSound from "./alreadyscanned.wav"; // Import the already scanned sound
+
+// Import message sounds for check-in and check-out modes
+import complete from "./complete.wav";
+const checkInMessages = [complete];
+const checkOutMessages = [complete];
 
 function Scan() {
   const [data, setData] = useState("");
@@ -19,8 +25,9 @@ function Scan() {
   const [isCheckInMode, setIsCheckInMode] = useState(null);
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100");
 
-  const scannedCodesRef = useRef(new Set()); // Ref to track scanned codes
-  const processingCodesRef = useRef(new Set()); // Ref to track processing codes
+  const scannedCodesRef = useRef(new Set()); // To track scanned codes
+  const processingCodesRef = useRef(new Map()); // To track codes being processed
+  const delayTimerRef = useRef(null); // To prevent rapid successive scans
 
   const checkMode = () => {
     const now = new Date();
@@ -36,10 +43,12 @@ function Scan() {
   useEffect(() => {
     const initialCheckInMode = checkMode();
     setIsCheckInMode(initialCheckInMode);
+    console.log(`Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`);
 
     const interval = setInterval(() => {
       const currentMode = checkMode();
       if (currentMode !== isCheckInMode) {
+        console.log(`Switching to ${currentMode ? "check-in" : "check-out"} mode`);
         setIsCheckInMode(currentMode);
       }
     }, 60000);
@@ -62,6 +71,7 @@ function Scan() {
   }, []);
 
   const cleanup = () => {
+    console.log("Running cleanup...");
     setData("");
     setLog([]);
     setStudentName("");
@@ -73,7 +83,9 @@ function Scan() {
   const updateAttendance = async (decodedCode, isCheckIn) => {
     try {
       const userDocRef = doc(db, "users", decodedCode);
+      console.log(`Reading from Firebase: ${decodedCode}`);
       const userDocSnap = await getDoc(userDocRef);
+      console.log(`Firebase read complete for ${decodedCode}`);
       const nowStr = getPhilippineTime();
       const dateStr = nowStr.split("T")[0];
 
@@ -87,39 +99,52 @@ function Scan() {
           if (!attendance[dateStr]) {
             attendance[dateStr] = { checkIn: nowStr, checkOut: null };
             await updateDoc(userDocRef, { attendance });
+            console.log("Check-in successful");
             setEmailData({
               shouldSend: true,
               decodedCode,
               studentName: currentStudentName,
             });
             triggerVisualFeedback("bg-[#06D001]", successSound);
+            playRandomMessageSound(checkInMessages);
+          } else {
+            console.log("Already checked in for today");
           }
         } else {
           if (attendance[dateStr]) {
             if (!attendance[dateStr].checkOut) {
               attendance[dateStr].checkOut = nowStr;
               await updateDoc(userDocRef, { attendance });
+              console.log("Checkout successful");
               setEmailData({
                 shouldSend: true,
                 decodedCode,
                 studentName: currentStudentName,
               });
               triggerVisualFeedback("bg-[#06D001]", successSound);
+              playRandomMessageSound(checkOutMessages);
+            } else {
+              console.log("Already checked out");
             }
           } else {
+            // No check-in recorded but it's check-out time, record check-out
             attendance[dateStr] = { checkIn: null, checkOut: nowStr };
             await updateDoc(userDocRef, { attendance });
+            console.log("No check-in recorded but check-out successful");
             setEmailData({
               shouldSend: true,
               decodedCode,
               studentName: currentStudentName,
             });
             triggerVisualFeedback("bg-[#06D001]", successSound);
+            playRandomMessageSound(checkOutMessages);
           }
         }
         addLogEntry(decodedCode, currentStudentName);
       } else {
+        console.log("No document found for this student ID");
         triggerVisualFeedback("bg-[#FF0000]", errorSound);
+        return;
       }
     } catch (error) {
       console.error("Error updating attendance: ", error);
@@ -130,7 +155,7 @@ function Scan() {
   };
 
   const handleResult = (result) => {
-    if (result) {
+    if (!!result) {
       const code = result.text;
       const decodedCode = code
         .split("")
@@ -138,6 +163,7 @@ function Scan() {
         .join("");
 
       if (!decodedCode.startsWith("mvba_")) {
+        console.log("Invalid code");
         triggerVisualFeedback("bg-[#FF0000]", errorSound);
         return;
       }
@@ -145,12 +171,25 @@ function Scan() {
       const processedCode = decodedCode.slice(5);
 
       if (!scannedCodesRef.current.has(processedCode) && !processingCodesRef.current.has(processedCode)) {
+        processingCodesRef.current.set(processedCode, true); // Mark as processing
         scannedCodesRef.current.add(processedCode);
-        processingCodesRef.current.add(processedCode);
+        setData(processedCode);
 
         const isCheckIn = checkMode();
         updateAttendance(processedCode, isCheckIn);
+
+        // Clear any existing delay timer
+        if (delayTimerRef.current) {
+          clearTimeout(delayTimerRef.current);
+          delayTimerRef.current = null;
+        }
+
+        // Start a new delay timer
+        delayTimerRef.current = setTimeout(() => {
+          delayTimerRef.current = null;
+        }, 3000); // Set delay for 3 seconds
       } else {
+        console.log("Already scanned or processing this code");
         const now = Date.now();
         if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
@@ -170,6 +209,7 @@ function Scan() {
       }),
       studentName: studentName,
     };
+    console.log("New Log Entry:", newLogEntry);
     setLog((prevLog) => [newLogEntry, ...prevLog.slice(0, 9)]);
   };
 
@@ -191,6 +231,12 @@ function Scan() {
     setBackgroundColor(color);
     playSound(sound);
     setTimeout(() => setBackgroundColor("bg-gray-100"), 1000);
+  };
+
+  const playRandomMessageSound = (messages) => {
+    const randomIndex = Math.floor(Math.random() * messages.length);
+    const randomSound = messages[randomIndex];
+    playSound(randomSound);
   };
 
   return (
@@ -248,15 +294,14 @@ function Scan() {
             studentName={emailData.studentName}
             decodedCode={emailData.decodedCode}
             onEmailSent={handleEmailSent}
-            />
-          )}
-        </div>
+          />
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  export default Scan;
-
+export default Scan;
 
 
 
