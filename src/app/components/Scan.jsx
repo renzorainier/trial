@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -18,7 +17,6 @@ function Scan() {
   const [data, setData] = useState("");
   const [log, setLog] = useState([]);
   const [studentName, setStudentName] = useState("");
-  const [currentDecodedCode, setCurrentDecodedCode] = useState("");
   const [emailData, setEmailData] = useState({
     shouldSend: false,
     decodedCode: "",
@@ -28,8 +26,9 @@ function Scan() {
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
 
   const scannedCodesRef = useRef(new Set());
-  const processingCodesRef = useRef(new Set()); // Ref to track codes being processed
+  const processingCodesRef = useRef(new Map()); // Ref to store the status of codes being processed
   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
+  const delayTimerRef = useRef(null); // Ref to store the delay timer
 
   const checkMode = () => {
     const now = new Date();
@@ -81,10 +80,9 @@ function Scan() {
     setData("");
     setLog([]);
     setStudentName("");
-    setCurrentDecodedCode("");
     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
     scannedCodesRef.current.clear();
-    processingCodesRef.current.clear();
+    processingCodesRef.current.clear(); // Clear the processing codes map
   };
 
   const updateAttendance = async (decodedCode, isCheckIn) => {
@@ -158,8 +156,7 @@ function Scan() {
       console.error("Error updating attendance: ", error);
       triggerVisualFeedback("bg-[#FF0000]", errorSound);
     } finally {
-      // Remove the code from processing set
-      processingCodesRef.current.delete(decodedCode);
+      processingCodesRef.current.delete(decodedCode); // Remove the code from the processing map after processing
     }
   };
 
@@ -180,9 +177,7 @@ function Scan() {
       const processedCode = decodedCode.slice(5);
 
       if (!scannedCodesRef.current.has(processedCode) && !processingCodesRef.current.has(processedCode)) {
-        // Mark the code as being processed
-        processingCodesRef.current.add(processedCode);
-
+        processingCodesRef.current.set(processedCode, true); // Mark as processing
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
 
@@ -190,11 +185,20 @@ function Scan() {
 
         updateAttendance(processedCode, isCheckIn);
 
-        setCurrentDecodedCode(processedCode);
+        // Clear any existing delay timer
+        if (delayTimerRef.current) {
+          clearTimeout(delayTimerRef.current);
+          delayTimerRef.current = null;
+        }
+
+        // Start a new delay timer
+        delayTimerRef.current = setTimeout(() => {
+          delayTimerRef.current = null;
+        }, 3000); // Set delay for 3 seconds
       } else {
         console.log("Already scanned or processing this code");
         const now = Date.now();
-        if (now - lastPlayedRef.current >= 1500) {
+        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
@@ -240,11 +244,13 @@ function Scan() {
     const randomIndex = Math.floor(Math.random() * messages.length);
     const randomSound = messages[randomIndex];
     playSound(randomSound);
+    playSound(randomSound);
   };
 
   return (
     <div
-      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
+      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}
+    >
       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
         <QrReader
           onResult={handleResult}
@@ -259,7 +265,8 @@ function Scan() {
             <p
               className={`text-lg font-semibold ${
                 isCheckInMode ? "text-green-600" : "text-red-600"
-              }`}>
+              }`}
+            >
               {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
             </p>
           </div>
@@ -276,7 +283,8 @@ function Scan() {
 
         <div
           className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll"
-          style={{ maxHeight: "300px" }}>
+          style={{ maxHeight: "300px" }}
+        >
           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
             {log.map((entry, index) => (
               <li key={`${entry.id}-${index}`} className="py-4 px-6">
@@ -300,8 +308,9 @@ function Scan() {
     </div>
   );
 }
-
 export default Scan;
+
+
 
 //i really thought this is the one
 // import React, { useState, useRef, useEffect } from "react";
