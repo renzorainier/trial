@@ -29,6 +29,7 @@ function Scan() {
   const processingCodesRef = useRef(new Map()); // Ref to store the status of codes being processed
   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
   const delayTimerRef = useRef(null); // Ref to store the delay timer
+  const lastProcessedTimeRef = useRef({}); // Ref to store the last processed time for each code
 
   const checkMode = () => {
     const now = new Date();
@@ -83,6 +84,7 @@ function Scan() {
     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
     scannedCodesRef.current.clear();
     processingCodesRef.current.clear(); // Clear the processing codes map
+    lastProcessedTimeRef.current = {}; // Clear the last processed times
   };
 
   const updateAttendance = async (decodedCode, isCheckIn) => {
@@ -176,10 +178,25 @@ function Scan() {
 
       const processedCode = decodedCode.slice(5);
 
+      // Check if the code was processed in the last 10 seconds
+      const now = Date.now();
+      if (
+        lastProcessedTimeRef.current[processedCode] &&
+        now - lastProcessedTimeRef.current[processedCode] < 10000
+      ) {
+        console.log("Already processed this code recently");
+        if (now - lastPlayedRef.current >= 1500) {
+          triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
+          lastPlayedRef.current = now;
+        }
+        return;
+      }
+
       if (!scannedCodesRef.current.has(processedCode) && !processingCodesRef.current.has(processedCode)) {
         processingCodesRef.current.set(processedCode, true); // Mark as processing
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
+        lastProcessedTimeRef.current[processedCode] = now; // Update last processed time
 
         const isCheckIn = checkMode();
 
@@ -197,8 +214,7 @@ function Scan() {
         }, 3000); // Set delay for 3 seconds
       } else {
         console.log("Already scanned or processing this code");
-        const now = Date.now();
-        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
+        if (now - lastPlayedRef.current >= 1500) {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
@@ -243,7 +259,6 @@ function Scan() {
   const playRandomMessageSound = (messages) => {
     const randomIndex = Math.floor(Math.random() * messages.length);
     const randomSound = messages[randomIndex];
-    playSound(randomSound);
     playSound(randomSound);
   };
 
@@ -309,6 +324,7 @@ function Scan() {
   );
 }
 export default Scan;
+
 
 
 
