@@ -26,6 +26,7 @@ function Scan() {
   });
   const [isCheckInMode, setIsCheckInMode] = useState(null);
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const scannedCodesRef = useRef(new Set());
   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
@@ -160,7 +161,7 @@ function Scan() {
 
 
   const handleResult = (result) => {
-    if (!!result) {
+    if (!!result && !isProcessing) {
       const code = result.text;
       console.log(`QR code detected: ${code}`);
       const decodedCode = code
@@ -180,9 +181,13 @@ function Scan() {
         console.log(`New QR code scan: ${processedCode}`);
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
+        setIsProcessing(true); // Set the processing flag
 
         const isCheckIn = checkMode(); // Update to use checkMode function
-        updateAttendance(processedCode, isCheckIn);
+        updateAttendance(processedCode, isCheckIn)
+          .finally(() => {
+            setIsProcessing(false); // Reset the processing flag when done
+          });
 
         setCurrentDecodedCode(processedCode);
 
