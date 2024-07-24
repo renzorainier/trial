@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -11,6 +12,7 @@ import alreadyScannedSound from "./alreadyscanned.wav"; // Import the already sc
 // Import message sounds for check-in and check-out modes
 import complete from "./complete.wav";
 const checkInMessages = [complete];
+
 const checkOutMessages = [complete];
 
 function Scan() {
@@ -25,10 +27,11 @@ function Scan() {
   });
   const [isCheckInMode, setIsCheckInMode] = useState(null);
   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
+  const [lastProcessedCode, setLastProcessedCode] = useState("");
 
   const scannedCodesRef = useRef(new Set());
-  const processingCodesRef = useRef(new Set()); // Ref to track codes being processed
   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
+  const delayTimerRef = useRef(null); // Ref to store the delay timer
 
   const checkMode = () => {
     const now = new Date();
@@ -83,7 +86,6 @@ function Scan() {
     setCurrentDecodedCode("");
     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
     scannedCodesRef.current.clear();
-    processingCodesRef.current.clear();
   };
 
   const updateAttendance = async (decodedCode, isCheckIn) => {
@@ -156,9 +158,6 @@ function Scan() {
     } catch (error) {
       console.error("Error updating attendance: ", error);
       triggerVisualFeedback("bg-[#FF0000]", errorSound);
-    } finally {
-      // Remove the code from processing set
-      processingCodesRef.current.delete(decodedCode);
     }
   };
 
@@ -178,22 +177,41 @@ function Scan() {
 
       const processedCode = decodedCode.slice(5);
 
-      if (!scannedCodesRef.current.has(processedCode) && !processingCodesRef.current.has(processedCode)) {
-        // Mark the code as being processed
-        processingCodesRef.current.add(processedCode);
+      if (processedCode === lastProcessedCode) {
+        console.log("Same code still in view, ignoring");
+        return;
+      }
 
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
+      if (!scannedCodesRef.current.has(processedCode)) {
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
+        setLastProcessedCode(processedCode);
 
-        const isCheckIn = checkMode();
+        const isCheckIn = currentHour >= 6 && currentHour < 10;
 
         updateAttendance(processedCode, isCheckIn);
 
         setCurrentDecodedCode(processedCode);
+
+        // Clear any existing delay timer
+        if (delayTimerRef.current) {
+          clearTimeout(delayTimerRef.current);
+          delayTimerRef.current = null;
+        }
+
+        // Start a new delay timer
+        delayTimerRef.current = setTimeout(() => {
+          delayTimerRef.current = null;
+          setLastProcessedCode("");
+        }, 3000); // Set delay for 3 seconds
       } else {
-        console.log("Already scanned or processing this code");
+        console.log("Already scanned this code");
         const now = Date.now();
-        if (now - lastPlayedRef.current >= 1500) {
+        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
@@ -235,74 +253,73 @@ function Scan() {
     setTimeout(() => setBackgroundColor("bg-gray-100"), 1000);
   };
 
-  const playRandomMessageSound = (messages) => {
-    const randomIndex = Math.floor(Math.random() * messages.length);
-    const randomSound = messages[randomIndex];
-    playSound(randomSound);
-  };
+  const playRandomMessageSound = (
+    messages) => {
+      const randomIndex = Math.floor(Math.random() * messages.length);
+      const randomSound = messages[randomIndex];
+      playSound(randomSound);
+    };
 
-  return (
-    <div
-      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
-        <QrReader
-          onResult={handleResult}
-          onError={handleScanError}
-          constraints={{ facingMode: "environment" }}
-          style={{ width: "100%", height: "100%", borderRadius: "8px" }}
-        />
-      </div>
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full flex flex-col items-center transition-transform transform hover:scale-105">
-        <div className="flex flex-col items-center justify-center mb-6">
-          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-            <p
-              className={`text-lg font-semibold ${
-                isCheckInMode ? "text-green-600" : "text-red-600"
-              }`}>
-              {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center mb-6">
-          <p className="text-xl font-bold text-gray-800 mb-2">Scan Result:</p>
-          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-            <p className="text-lg text-blue-600 font-semibold">
-              {data} {studentName && `(${studentName})`}
-            </p>
-          </div>
-        </div>
-
-        <div
-          className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll"
-          style={{ maxHeight: "300px" }}>
-          <ul className="text-gray-700 divide-y divide-gray-300 w-full">
-            {log.map((entry, index) => (
-              <li key={`${entry.id}-${index}`} className="py-4 px-6">
-                <span className="block text-lg font-semibold">
-                  {entry.time}
-                </span>
-                <span className="block text-sm">{entry.studentName}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {emailData.shouldSend && (
-          <Email
-            studentName={emailData.studentName}
-            decodedCode={emailData.decodedCode}
-            onEmailSent={handleEmailSent}
+    return (
+      <div
+        className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6`}>
+        <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
+          <QrReader
+            onResult={handleResult}
+            onError={handleScanError}
+            constraints={{ facingMode: "environment" }}
+            style={{ width: "100%", height: "100%", borderRadius: "8px" }}
           />
-        )}
+        </div>
+        <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full flex flex-col items-center transition-transform transform hover:scale-105">
+          <div className="flex flex-col items-center justify-center mb-6">
+            <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+              <p
+                className={`text-lg font-semibold ${
+                  isCheckInMode ? "text-green-600" : "text-red-600"
+                }`}>
+                {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center mb-6">
+            <p className="text-xl font-bold text-gray-800 mb-2">Scan Result:</p>
+            <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+              <p className="text-lg text-blue-600 font-semibold">
+                {data} {studentName && `(${studentName})`}
+              </p>
+            </div>
+          </div>
+
+          <div
+            className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll"
+            style={{ maxHeight: "300px" }}>
+            <ul className="text-gray-700 divide-y divide-gray-300 w-full">
+              {log.map((entry, index) => (
+                <li key={`${entry.id}-${index}`} className="py-4 px-6">
+                  <span className="block text-lg font-semibold">
+                    {entry.time}
+                  </span>
+                  <span className="block text-sm">{entry.studentName}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {emailData.shouldSend && (
+            <Email
+              studentName={emailData.studentName}
+              decodedCode={emailData.decodedCode}
+              onEmailSent={handleEmailSent}
+            />
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-export default Scan;
-
-
+  export default Scan;
 
 
 //left on thurs july 24
