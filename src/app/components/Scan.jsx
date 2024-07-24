@@ -1,4 +1,3 @@
-//ffin works. i think?
 import React, { useState, useRef, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -320,6 +319,8 @@ function Scan() {
   }
 
   export default Scan;
+
+
 
   //not yet tried
 //   import React, { useState, useRef, useEffect } from "react";
