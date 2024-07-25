@@ -310,6 +310,10 @@ function Scan() {
   );
 }
 export default Scan;
+
+
+
+
 //working version 25
 // import React, { useState, useRef, useEffect } from "react";
 // import { QrReader } from "react-qr-reader";
