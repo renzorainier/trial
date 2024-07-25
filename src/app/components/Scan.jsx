@@ -7,10 +7,7 @@ import { mappingTable, getPhilippineTime } from "./Constants";
 function Scan() {
   const [data, setData] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lastScanTime, setLastScanTime] = useState(0);
   const scannedCodesRef = useRef(new Set());
-
-  const DEBOUNCE_TIME = 2000; // 2 seconds debounce time
 
   const updateAttendance = async (decodedCode) => {
     try {
@@ -45,8 +42,7 @@ function Scan() {
   };
 
   const handleResult = (result) => {
-    const now = Date.now();
-    if (!!result && !isProcessing && (now - lastScanTime > DEBOUNCE_TIME)) {
+    if (!!result && !isProcessing) {
       const code = result.text;
       console.log(`QR code detected: ${code}`);
       const decodedCode = code
@@ -66,7 +62,6 @@ function Scan() {
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
         setIsProcessing(true); // Set the processing flag
-        setLastScanTime(now); // Update last scan time
 
         updateAttendance(processedCode).finally(() => {
           setIsProcessing(false); // Reset the processing flag when done
@@ -104,6 +99,115 @@ function Scan() {
 }
 
 export default Scan;
+
+
+//work?simploified 25
+// import React, { useState, useRef, useEffect } from "react";
+// import { QrReader } from "react-qr-reader";
+// import { doc, getDoc, updateDoc } from "firebase/firestore";
+// import { db } from "./firebase.js";
+// import { mappingTable, getPhilippineTime } from "./Constants";
+
+// function Scan() {
+//   const [data, setData] = useState("");
+//   const [isProcessing, setIsProcessing] = useState(false);
+//   const [lastScanTime, setLastScanTime] = useState(0);
+//   const scannedCodesRef = useRef(new Set());
+
+//   const DEBOUNCE_TIME = 2000; // 2 seconds debounce time
+
+//   const updateAttendance = async (decodedCode) => {
+//     try {
+//       const userDocRef = doc(db, "users", decodedCode);
+//       console.log(`Attempting to read from Firebase for decodedCode: ${decodedCode}`);
+//       const userDocSnap = await getDoc(userDocRef);
+//       console.log(`Firebase read complete for ${decodedCode}`);
+//       const nowStr = getPhilippineTime();
+//       const dateStr = nowStr.split("T")[0];
+
+//       if (userDocSnap.exists()) {
+//         const userData = userDocSnap.data();
+//         const attendance = userData.attendance || {};
+
+//         if (!attendance[dateStr]) {
+//           attendance[dateStr] = { checkIn: nowStr, checkOut: null };
+//           await updateDoc(userDocRef, { attendance });
+//           console.log("Check-in successful");
+//         } else if (!attendance[dateStr].checkOut) {
+//           attendance[dateStr].checkOut = nowStr;
+//           await updateDoc(userDocRef, { attendance });
+//           console.log("Checkout successful");
+//         } else {
+//           console.log("Already checked out");
+//         }
+//       } else {
+//         console.log("No document found for this student ID");
+//       }
+//     } catch (error) {
+//       console.error("Error updating attendance: ", error);
+//     }
+//   };
+
+//   const handleResult = (result) => {
+//     const now = Date.now();
+//     if (!!result && !isProcessing && (now - lastScanTime > DEBOUNCE_TIME)) {
+//       const code = result.text;
+//       console.log(`QR code detected: ${code}`);
+//       const decodedCode = code
+//         .split("")
+//         .map((char) => mappingTable[char] || "")
+//         .join("");
+
+//       if (!decodedCode.startsWith("mvba_")) {
+//         console.log("Invalid code");
+//         return;
+//       }
+
+//       const processedCode = decodedCode.slice(5);
+
+//       if (!scannedCodesRef.current.has(processedCode)) {
+//         console.log(`New QR code scan: ${processedCode}`);
+//         setData(processedCode);
+//         scannedCodesRef.current.add(processedCode);
+//         setIsProcessing(true); // Set the processing flag
+//         setLastScanTime(now); // Update last scan time
+
+//         updateAttendance(processedCode).finally(() => {
+//           setIsProcessing(false); // Reset the processing flag when done
+//         });
+//       } else {
+//         console.log("Already scanned this code");
+//       }
+//     }
+//   };
+
+//   const handleScanError = (error) => {
+//     console.error("QR Scan Error:", error);
+//   };
+
+//   return (
+//     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
+//       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 mb-6 transition-transform transform hover:scale-105">
+//         <QrReader
+//           onResult={handleResult}
+//           onError={handleScanError}
+//           constraints={{ facingMode: "environment" }}
+//           style={{ width: "100%", height: "100%", borderRadius: "8px" }}
+//         />
+//       </div>
+//       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 flex flex-col items-center transition-transform transform hover:scale-105">
+//         <div className="flex flex-col items-center justify-center mb-6">
+//           <p className="text-xl font-bold text-gray-800 mb-2">Scan Result:</p>
+//           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+//             <p className="text-lg text-blue-600 font-semibold">{data}</p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default Scan;
 
 
 
