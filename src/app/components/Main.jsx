@@ -1,61 +1,95 @@
-import { useState, useEffect } from "react";
+import { useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/app/firebase/config';
+import { useRouter } from 'next/navigation.js';
+import { signOut } from 'firebase/auth';
+import Scan from './Scan.jsx';
 
-import Pass from "./Pass";
-import Generate from "./Generate";
+export default function Main() {
+  const [user] = useAuthState(auth);
+  const router = useRouter();
+  const adminUID = 'ytv9sju3TWhFOtrQZrmkUBexU2C3'; // Admin UID
 
+  useEffect(() => {
+    const handleUserCheck = () => {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
 
-const MainComponent = () => {
-  const [currentComponent, setCurrentComponent] = useState(null);
+      if (!user && !storedUser) {
+        router.push('/sign-in');
+        return;
+      }
 
-  const handleButtonClick = (componentName) => {
-    setCurrentComponent(componentName);
-  };
+      if (user && user.uid !== adminUID) {
+        console.error('Access denied. Only admin can access this.');
+        router.push('/error'); // Redirect to error page for unauthorized access
+        return;
+      }
 
-  const handleBackButtonClick = () => {
-    setCurrentComponent(null);
-  };
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+    };
 
-  const renderCurrentComponent = () => {
-    switch (currentComponent) {
-      case "pass":
-        return <Pass onBackButtonClick={handleBackButtonClick} />;
-      case "generate":
-        return <Generate onBackButtonClick={handleBackButtonClick} />;
+    handleUserCheck();
+  }, [user, router]);
 
-
-      // render other components as needed
-      default:
-        return (
-          <div className="flex text-white justify-center h-screen">
-          <div className="mt-4 max-w-screen-lg mx-auto">
-            <div className="greeting-container">{/* <Greeting /> */}</div>
-
-            <div className="grid grid-cols-3 gap-4 mt-3">
-              <button
-                className="bg-violet-400 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 font-bold text-xl py-10 rounded-lg shadow-lg"
-                onClick={() => handleButtonClick("pass")}
-              >
-                Scan
-              </button>
-              <button
-                className="bg-violet-400 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 font-bold text-xl py-10 rounded-lg shadow-lg"
-                onClick={() => handleButtonClick("generate")}
-              >
-                QR Code
-              </button>
-
-            </div>
-          </div>
-        </div>
-
-        );
-
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('user');
+      router.push('/sign-in');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 
-  return <div className="fade-in">{renderCurrentComponent()}</div>;
-};
+  return (
+    <main className="flex min-h-screen flex-col bg-[#031525] justify-between">
+      <button onClick={handleSignOut} className="self-end m-4 p-2 bg-red-600 text-white rounded">
+        Sign Out
+      </button>
+      <Scan />
+    </main>
+  );
+}
 
-export default MainComponent;
+
+//simple working chuchu 25
+// import { useEffect } from 'react';
+// import { useAuthState } from 'react-firebase-hooks/auth';
+// import { auth } from '@/app/firebase/config';
+// import { useRouter } from 'next/navigation.js';
+// // import YourComponent from './YourComponent'; // Import the component you want to render
+// import Scan from "./Scan.jsx"
 
 
+// export default function Main() {
+//   const [user] = useAuthState(auth);
+//   const router = useRouter();
+//   const userSession = typeof window !== 'undefined' ? sessionStorage.getItem('user') : null;
+//   const adminUID = 'ytv9sju3TWhFOtrQZrmkUBexU2C3'; // Admin UID
+
+//   useEffect(() => {
+//     const handleUserCheck = () => {
+//       if (!user && !userSession) {
+//         router.push('/sign-in');
+//         return;
+//       }
+
+//       // Ensure only the admin UID can proceed
+//       if (user && user.uid !== adminUID) {
+//         console.error('Access denied. Only admin can access this.');
+//         router.push('/error'); // Redirect to error page for unauthorized access
+//         return;
+//       }
+//     };
+
+//     handleUserCheck();
+//   }, [user, userSession, router]);
+
+//   return (
+//     <main >
+//       <Scan/>
+//     </main>
+//   );
+// }
