@@ -120,7 +120,7 @@ function Scan() {
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
-      if (currentHour === 16 && currentMinute === 3) {
+      if (currentHour === 14 && currentMinute === 32) {
         cleanup();
       }
     }, 60000);
