@@ -121,7 +121,7 @@ function Scan() {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       if (currentHour === 14 && currentMinute === 32) {
-        cleanup();
+        cleanup(setData, setLog, setStudentName, setCurrentDecodedCode, setEmailData, scannedCodesRef);
       }
     }, 60000);
 
@@ -220,7 +220,7 @@ function Scan() {
         // Clear any existing delay timer
         if (delayTimerRef.current) {
           clearTimeout(delayTimerRef.current);
-          delayTimerRef.current = null;
+          delayTimerRef.          current = null;
         }
 
         // Start a new delay timer
