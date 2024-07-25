@@ -4,12 +4,13 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase.js";
 import { mappingTable, getPhilippineTime } from "./Constants";
 import Email from "./Email";
-import {
-  preLoadSounds,
-  playSound,
-  triggerVisualFeedback,
-  playRandomMessageSound,
-} from "./soundUtils";
+import successSoundFile from "./success.wav";
+import errorSoundFile from "./error.wav";
+import alreadyScannedSoundFile from "./alreadyscanned.wav";
+import complete from "./complete.wav";
+
+const checkInMessages = [complete];
+const checkOutMessages = [complete];
 
 const checkMode = () => {
   const now = new Date();
@@ -28,6 +29,24 @@ const cleanup = (setData, setLog, setStudentName, setCurrentDecodedCode, setEmai
   scannedCodesRef.current.clear();
 };
 
+const playSound = (audioRef) => {
+  if (audioRef.current) {
+    audioRef.current.play();
+  }
+};
+
+const triggerVisualFeedback = (color, audioRef, setBackgroundColor) => {
+  setBackgroundColor(color);
+  playSound(audioRef);
+  setTimeout(() => setBackgroundColor("bg-gray-100"), 1000);
+};
+
+const playRandomMessageSound = (messages, audioRefs) => {
+  const randomIndex = Math.floor(Math.random() * messages.length);
+  const randomSoundRef = audioRefs[randomIndex];
+  playSound(randomSoundRef);
+};
+
 function Scan() {
   // State Hooks
   const [data, setData] = useState("");
@@ -42,7 +61,11 @@ function Scan() {
   const scannedCodesRef = useRef(new Set());
   const lastPlayedRef = useRef(0);
   const delayTimerRef = useRef(null);
-  const soundRefs = useRef(preLoadSounds());
+  const successSoundRef = useRef(null);
+  const errorSoundRef = useRef(null);
+  const alreadyScannedSoundRef = useRef(null);
+  const checkInMessageSoundRefs = useRef([]);
+  const checkOutMessageSoundRefs = useRef([]);
 
   // Utility Functions
   const addLogEntry = (processedCode, studentName) => {
@@ -65,11 +88,18 @@ function Scan() {
 
   const handleScanError = (error) => {
     console.error("QR Scan Error:", error);
-    triggerVisualFeedback("bg-[#FF0000]", soundRefs.current.errorSoundRef, setBackgroundColor);
+    triggerVisualFeedback("bg-[#FF0000]", errorSoundRef, setBackgroundColor);
   };
 
   // Effect Hooks
   useEffect(() => {
+    // Pre-load sounds
+    successSoundRef.current = new Audio(successSoundFile);
+    errorSoundRef.current = new Audio(errorSoundFile);
+    alreadyScannedSoundRef.current = new Audio(alreadyScannedSoundFile);
+    checkInMessageSoundRefs.current = checkInMessages.map((sound) => new Audio(sound));
+    checkOutMessageSoundRefs.current = checkOutMessages.map((sound) => new Audio(sound));
+
     const initialCheckInMode = checkMode();
     setIsCheckInMode(initialCheckInMode);
     console.log(`Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`);
@@ -120,8 +150,8 @@ function Scan() {
             await updateDoc(userDocRef, { attendance });
             console.log("Check-in successful");
             setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
-            triggerVisualFeedback("bg-[#06D001]", soundRefs.current.successSoundRef, setBackgroundColor);
-            playRandomMessageSound(checkInMessages, soundRefs.current.checkInMessageSoundRefs);
+            triggerVisualFeedback("bg-[#06D001]", successSoundRef, setBackgroundColor);
+            playRandomMessageSound(checkInMessages, checkInMessageSoundRefs.current);
           } else {
             console.log("Already checked in for today");
           }
@@ -132,8 +162,8 @@ function Scan() {
               await updateDoc(userDocRef, { attendance });
               console.log("Checkout successful");
               setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
-              triggerVisualFeedback("bg-[#06D001]", soundRefs.current.successSoundRef, setBackgroundColor);
-              playRandomMessageSound(checkOutMessages, soundRefs.current.checkOutMessageSoundRefs);
+              triggerVisualFeedback("bg-[#06D001]", successSoundRef, setBackgroundColor);
+              playRandomMessageSound(checkOutMessages, checkOutMessageSoundRefs.current);
             } else {
               console.log("Already checked out");
             }
@@ -143,20 +173,20 @@ function Scan() {
             await updateDoc(userDocRef, { attendance });
             console.log("No check-in recorded but check-out successful");
             setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
-            triggerVisualFeedback("bg-[#06D001]", soundRefs.current.successSoundRef, setBackgroundColor);
-            playRandomMessageSound(checkOutMessages, soundRefs.current.checkOutMessageSoundRefs);
+            triggerVisualFeedback("bg-[#06D001]", successSoundRef, setBackgroundColor);
+            playRandomMessageSound(checkOutMessages, checkOutMessageSoundRefs.current);
           }
         }
         // Add the log entry with the current student's name
         addLogEntry(decodedCode, currentStudentName);
       } else {
         console.log("No document found for this student ID");
-        triggerVisualFeedback("bg-[#FF0000]", soundRefs.current.errorSoundRef, setBackgroundColor);
+        triggerVisualFeedback("bg-[#FF0000]", errorSoundRef, setBackgroundColor);
         return; // Stop the process if no document is found
       }
     } catch (error) {
       console.error("Error updating attendance: ", error);
-      triggerVisualFeedback("bg-[#FF0000]", soundRefs.current.errorSoundRef, setBackgroundColor);
+      triggerVisualFeedback("bg-[#FF0000]", errorSoundRef, setBackgroundColor);
     }
   };
 
@@ -167,7 +197,7 @@ function Scan() {
 
       if (!decodedCode.startsWith("mvba_")) {
         console.log("Invalid code");
-        triggerVisualFeedback("bg-[#FF0000]", soundRefs.current.errorSoundRef, setBackgroundColor);
+        triggerVisualFeedback("bg-[#FF0000]", errorSoundRef, setBackgroundColor);
         return;
       }
 
@@ -190,7 +220,7 @@ function Scan() {
         // Clear any existing delay timer
         if (delayTimerRef.current) {
           clearTimeout(delayTimerRef.current);
-          delayTimerRef.current = null;
+          delayTimerRef.          current = null;
         }
 
         // Start a new delay timer
@@ -201,7 +231,7 @@ function Scan() {
         console.log("Already scanned this code");
         const now = Date.now();
         if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
-          triggerVisualFeedback("bg-[#FFCC00]", soundRefs.current.alreadyScannedSoundRef, setBackgroundColor);
+          triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSoundRef, setBackgroundColor);
           lastPlayedRef.current = now;
         }
       }
@@ -269,6 +299,7 @@ function Scan() {
 }
 
 export default Scan;
+
 
 //shorter version, not sure if it really work properly, maybe? 25
 // import React, { useState, useRef, useEffect } from "react";
