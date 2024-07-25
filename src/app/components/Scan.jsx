@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
