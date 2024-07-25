@@ -7,7 +7,10 @@ import { mappingTable, getPhilippineTime } from "./Constants";
 function Scan() {
   const [data, setData] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastScanTime, setLastScanTime] = useState(0);
   const scannedCodesRef = useRef(new Set());
+
+  const DEBOUNCE_TIME = 2000; // 2 seconds debounce time
 
   const updateAttendance = async (decodedCode) => {
     try {
@@ -42,7 +45,8 @@ function Scan() {
   };
 
   const handleResult = (result) => {
-    if (!!result && !isProcessing) {
+    const now = Date.now();
+    if (!!result && !isProcessing && (now - lastScanTime > DEBOUNCE_TIME)) {
       const code = result.text;
       console.log(`QR code detected: ${code}`);
       const decodedCode = code
@@ -62,6 +66,7 @@ function Scan() {
         setData(processedCode);
         scannedCodesRef.current.add(processedCode);
         setIsProcessing(true); // Set the processing flag
+        setLastScanTime(now); // Update last scan time
 
         updateAttendance(processedCode).finally(() => {
           setIsProcessing(false); // Reset the processing flag when done
@@ -99,6 +104,7 @@ function Scan() {
 }
 
 export default Scan;
+
 
 
 
