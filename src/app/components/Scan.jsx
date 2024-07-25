@@ -120,7 +120,7 @@ function Scan() {
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
-      if (currentHour === 14 && currentMinute === 39) {
+      if (currentHour === 14 && currentMinute === 41) {
         cleanup(setData, setLog, setStudentName, setCurrentDecodedCode, setEmailData, scannedCodesRef);
       }
     }, 60000);
