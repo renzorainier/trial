@@ -3,92 +3,13 @@ import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase.js";
 import { mappingTable, getPhilippineTime } from "./Constants";
-import Email from "./Email"; // Import the Email component
-import successSound from "./success.wav"; // Import the success sound
-import errorSound from "./error.wav"; // Import the error sound
-import alreadyScannedSound from "./alreadyscanned.wav"; // Import the already scanned sound
-
-// Import message sounds for check-in and check-out modes
-import complete from "./complete.wav";
-const checkInMessages = [complete];
-
-const checkOutMessages = [complete];
 
 function Scan() {
   const [data, setData] = useState("");
-  const [log, setLog] = useState([]);
-  const [studentName, setStudentName] = useState("");
-  const [currentDecodedCode, setCurrentDecodedCode] = useState("");
-  const [emailData, setEmailData] = useState({
-    shouldSend: false,
-    decodedCode: "",
-    studentName: "",
-  });
-  const [isCheckInMode, setIsCheckInMode] = useState(null);
-  const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
   const [isProcessing, setIsProcessing] = useState(false);
-
   const scannedCodesRef = useRef(new Set());
-  const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
-  const delayTimerRef = useRef(null); // Ref to store the delay timer
 
-  const checkMode = () => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-
-    return (
-      (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
-      currentHour < 10
-    );
-  };
-  //try lan
-
-  useEffect(() => {
-    const initialCheckInMode = checkMode();
-    setIsCheckInMode(initialCheckInMode);
-    console.log(
-      `Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`
-    );
-
-    const interval = setInterval(() => {
-      const currentMode = checkMode();
-      if (currentMode !== isCheckInMode) {
-        console.log(
-          `Switching to ${currentMode ? "check-in" : "check-out"} mode`
-        );
-        setIsCheckInMode(currentMode);
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [isCheckInMode]);
-
-  useEffect(() => {
-    const cleanupInterval = setInterval(() => {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-
-      if (currentHour === 16 && currentMinute === 3) {
-        cleanup();
-      }
-    }, 60000); // Check every minute
-
-    return () => clearInterval(cleanupInterval); // Cleanup the interval on component unmount
-  }, []);
-
-  const cleanup = () => {
-    console.log("Running cleanup...");
-    setData("");
-    setLog([]);
-    setStudentName("");
-    setCurrentDecodedCode("");
-    setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
-    scannedCodesRef.current.clear();
-  };
-
-  const updateAttendance = async (decodedCode, isCheckIn) => {
+  const updateAttendance = async (decodedCode) => {
     try {
       const userDocRef = doc(db, "users", decodedCode);
       console.log(`Attempting to read from Firebase for decodedCode: ${decodedCode}`);
@@ -100,65 +21,25 @@ function Scan() {
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
         const attendance = userData.attendance || {};
-        const currentStudentName = userData.name || "Unknown";
-        setStudentName(currentStudentName);
 
-        if (isCheckIn) {
-          if (!attendance[dateStr]) {
-            attendance[dateStr] = { checkIn: nowStr, checkOut: null };
-            await updateDoc(userDocRef, { attendance });
-            console.log("Check-in successful");
-            setEmailData({
-              shouldSend: true,
-              decodedCode,
-              studentName: currentStudentName,
-            });
-            triggerVisualFeedback("bg-[#06D001]", successSound);
-            playRandomMessageSound(checkInMessages);
-          } else {
-            console.log("Already checked in for today");
-          }
+        if (!attendance[dateStr]) {
+          attendance[dateStr] = { checkIn: nowStr, checkOut: null };
+          await updateDoc(userDocRef, { attendance });
+          console.log("Check-in successful");
+        } else if (!attendance[dateStr].checkOut) {
+          attendance[dateStr].checkOut = nowStr;
+          await updateDoc(userDocRef, { attendance });
+          console.log("Checkout successful");
         } else {
-          if (attendance[dateStr]) {
-            if (!attendance[dateStr].checkOut) {
-              attendance[dateStr].checkOut = nowStr;
-              await updateDoc(userDocRef, { attendance });
-              console.log("Checkout successful");
-              setEmailData({
-                shouldSend: true,
-                decodedCode,
-                studentName: currentStudentName,
-              });
-              triggerVisualFeedback("bg-[#06D001]", successSound);
-              playRandomMessageSound(checkOutMessages);
-            } else {
-              console.log("Already checked out");
-            }
-          } else {
-            attendance[dateStr] = { checkIn: null, checkOut: nowStr };
-            await updateDoc(userDocRef, { attendance });
-            console.log("No check-in recorded but check-out successful");
-            setEmailData({
-              shouldSend: true,
-              decodedCode,
-              studentName: currentStudentName,
-            });
-            triggerVisualFeedback("bg-[#06D001]", successSound);
-            playRandomMessageSound(checkOutMessages);
-          }
+          console.log("Already checked out");
         }
-        addLogEntry(decodedCode, currentStudentName);
       } else {
         console.log("No document found for this student ID");
-        triggerVisualFeedback("bg-[#FF0000]", errorSound);
-        return;
       }
     } catch (error) {
       console.error("Error updating attendance: ", error);
-      triggerVisualFeedback("bg-[#FF0000]", errorSound);
     }
   };
-
 
   const handleResult = (result) => {
     if (!!result && !isProcessing) {
@@ -171,7 +52,6 @@ function Scan() {
 
       if (!decodedCode.startsWith("mvba_")) {
         console.log("Invalid code");
-        triggerVisualFeedback("bg-[#FF0000]", errorSound);
         return;
       }
 
@@ -183,78 +63,22 @@ function Scan() {
         scannedCodesRef.current.add(processedCode);
         setIsProcessing(true); // Set the processing flag
 
-        const isCheckIn = checkMode(); // Update to use checkMode function
-        updateAttendance(processedCode, isCheckIn)
-          .finally(() => {
-            setIsProcessing(false); // Reset the processing flag when done
-          });
-
-        setCurrentDecodedCode(processedCode);
-
-        if (delayTimerRef.current) {
-          clearTimeout(delayTimerRef.current);
-          delayTimerRef.current = null;
-        }
-
-        delayTimerRef.current = setTimeout(() => {
-          delayTimerRef.current = null;
-        }, 3000);
+        updateAttendance(processedCode).finally(() => {
+          setIsProcessing(false); // Reset the processing flag when done
+        });
       } else {
         console.log("Already scanned this code");
-        const now = Date.now();
-        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
-          triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
-          lastPlayedRef.current = now;
-        }
       }
     }
   };
 
-
-  const addLogEntry = (processedCode, studentName) => {
-    const newLogEntry = {
-      id: processedCode,
-      time: new Date().toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
-      studentName: studentName,
-    };
-    console.log("New Log Entry:", newLogEntry);
-    setLog((prevLog) => [newLogEntry, ...prevLog.slice(0, 9)]);
-  };
-
   const handleScanError = (error) => {
     console.error("QR Scan Error:", error);
-    triggerVisualFeedback("bg-[#FF0000]", errorSound);
-  };
-
-  const handleEmailSent = () => {
-    setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
-  };
-
-  const playSound = (sound) => {
-    const audio = new Audio(sound);
-    audio.play();
-  };
-
-  const triggerVisualFeedback = (color, sound) => {
-    setBackgroundColor(color);
-    playSound(sound);
-    setTimeout(() => setBackgroundColor("bg-gray-100"), 1000);
-  };
-
-  const playRandomMessageSound = (messages) => {
-    const randomIndex = Math.floor(Math.random() * messages.length);
-    const randomSound = messages[randomIndex];
-    playSound(randomSound);
   };
 
   return (
-    <div
-      className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6 `}>
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 mb-6 transition-transform transform hover:scale-105">
         <QrReader
           onResult={handleResult}
           onError={handleScanError}
@@ -262,54 +86,334 @@ function Scan() {
           style={{ width: "100%", height: "100%", borderRadius: "8px" }}
         />
       </div>
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full flex flex-col items-center transition-transform transform hover:scale-105">
-        <div className="flex flex-col items-center justify-center mb-6">
-          <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-            <p
-              className={`text-lg font-semibold ${
-                isCheckInMode ? "text-green-600" : "text-red-600"
-              }`}>
-              {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
-            </p>
-          </div>
-        </div>
-
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 flex flex-col items-center transition-transform transform hover:scale-105">
         <div className="flex flex-col items-center justify-center mb-6">
           <p className="text-xl font-bold text-gray-800 mb-2">Scan Result:</p>
           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
-            <p className="text-lg text-blue-600 font-semibold">
-              {data} {studentName && `(${studentName})`}
-            </p>
+            <p className="text-lg text-blue-600 font-semibold">{data}</p>
           </div>
         </div>
-
-        <div
-          className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll"
-          style={{ maxHeight: "300px" }}>
-          <ul className="text-gray-700 divide-y divide-gray-300 w-full">
-            {log.map((entry, index) => (
-              <li key={`${entry.id}-${index}`} className="py-4 px-6">
-                <span className="block text-lg font-semibold">
-                  {entry.time}
-                </span>
-                <span className="block text-sm">{entry.studentName}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {emailData.shouldSend && (
-          <Email
-            studentName={emailData.studentName}
-            decodedCode={emailData.decodedCode}
-            onEmailSent={handleEmailSent}
-          />
-        )}
       </div>
     </div>
   );
 }
+
 export default Scan;
+
+
+
+// import React, { useState, useRef, useEffect } from "react";
+// import { QrReader } from "react-qr-reader";
+// import { doc, getDoc, updateDoc } from "firebase/firestore";
+// import { db } from "./firebase.js";
+// import { mappingTable, getPhilippineTime } from "./Constants";
+// import Email from "./Email"; // Import the Email component
+// import successSound from "./success.wav"; // Import the success sound
+// import errorSound from "./error.wav"; // Import the error sound
+// import alreadyScannedSound from "./alreadyscanned.wav"; // Import the already scanned sound
+
+// // Import message sounds for check-in and check-out modes
+// import complete from "./complete.wav";
+// const checkInMessages = [complete];
+
+// const checkOutMessages = [complete];
+
+// function Scan() {
+//   const [data, setData] = useState("");
+//   const [log, setLog] = useState([]);
+//   const [studentName, setStudentName] = useState("");
+//   const [currentDecodedCode, setCurrentDecodedCode] = useState("");
+//   const [emailData, setEmailData] = useState({
+//     shouldSend: false,
+//     decodedCode: "",
+//     studentName: "",
+//   });
+//   const [isCheckInMode, setIsCheckInMode] = useState(null);
+//   const [backgroundColor, setBackgroundColor] = useState("bg-gray-100"); // State for background color
+//   const [isProcessing, setIsProcessing] = useState(false);
+
+//   const scannedCodesRef = useRef(new Set());
+//   const lastPlayedRef = useRef(0); // Ref to store the last time the already scanned sound was played
+//   const delayTimerRef = useRef(null); // Ref to store the delay timer
+
+//   const checkMode = () => {
+//     const now = new Date();
+//     const currentHour = now.getHours();
+//     const currentMinute = now.getMinutes();
+
+//     return (
+//       (currentHour > 6 || (currentHour === 6 && currentMinute >= 0)) &&
+//       currentHour < 10
+//     );
+//   };
+//   //try lan
+
+//   useEffect(() => {
+//     const initialCheckInMode = checkMode();
+//     setIsCheckInMode(initialCheckInMode);
+//     console.log(
+//       `Currently in ${initialCheckInMode ? "check-in" : "check-out"} mode`
+//     );
+
+//     const interval = setInterval(() => {
+//       const currentMode = checkMode();
+//       if (currentMode !== isCheckInMode) {
+//         console.log(
+//           `Switching to ${currentMode ? "check-in" : "check-out"} mode`
+//         );
+//         setIsCheckInMode(currentMode);
+//       }
+//     }, 60000);
+
+//     return () => clearInterval(interval);
+//   }, [isCheckInMode]);
+
+//   useEffect(() => {
+//     const cleanupInterval = setInterval(() => {
+//       const now = new Date();
+//       const currentHour = now.getHours();
+//       const currentMinute = now.getMinutes();
+
+//       if (currentHour === 16 && currentMinute === 3) {
+//         cleanup();
+//       }
+//     }, 60000); // Check every minute
+
+//     return () => clearInterval(cleanupInterval); // Cleanup the interval on component unmount
+//   }, []);
+
+//   const cleanup = () => {
+//     console.log("Running cleanup...");
+//     setData("");
+//     setLog([]);
+//     setStudentName("");
+//     setCurrentDecodedCode("");
+//     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
+//     scannedCodesRef.current.clear();
+//   };
+
+//   const updateAttendance = async (decodedCode, isCheckIn) => {
+//     try {
+//       const userDocRef = doc(db, "users", decodedCode);
+//       console.log(`Attempting to read from Firebase for decodedCode: ${decodedCode}`);
+//       const userDocSnap = await getDoc(userDocRef);
+//       console.log(`Firebase read complete for ${decodedCode}`);
+//       const nowStr = getPhilippineTime();
+//       const dateStr = nowStr.split("T")[0];
+
+//       if (userDocSnap.exists()) {
+//         const userData = userDocSnap.data();
+//         const attendance = userData.attendance || {};
+//         const currentStudentName = userData.name || "Unknown";
+//         setStudentName(currentStudentName);
+
+//         if (isCheckIn) {
+//           if (!attendance[dateStr]) {
+//             attendance[dateStr] = { checkIn: nowStr, checkOut: null };
+//             await updateDoc(userDocRef, { attendance });
+//             console.log("Check-in successful");
+//             setEmailData({
+//               shouldSend: true,
+//               decodedCode,
+//               studentName: currentStudentName,
+//             });
+//             triggerVisualFeedback("bg-[#06D001]", successSound);
+//             playRandomMessageSound(checkInMessages);
+//           } else {
+//             console.log("Already checked in for today");
+//           }
+//         } else {
+//           if (attendance[dateStr]) {
+//             if (!attendance[dateStr].checkOut) {
+//               attendance[dateStr].checkOut = nowStr;
+//               await updateDoc(userDocRef, { attendance });
+//               console.log("Checkout successful");
+//               setEmailData({
+//                 shouldSend: true,
+//                 decodedCode,
+//                 studentName: currentStudentName,
+//               });
+//               triggerVisualFeedback("bg-[#06D001]", successSound);
+//               playRandomMessageSound(checkOutMessages);
+//             } else {
+//               console.log("Already checked out");
+//             }
+//           } else {
+//             attendance[dateStr] = { checkIn: null, checkOut: nowStr };
+//             await updateDoc(userDocRef, { attendance });
+//             console.log("No check-in recorded but check-out successful");
+//             setEmailData({
+//               shouldSend: true,
+//               decodedCode,
+//               studentName: currentStudentName,
+//             });
+//             triggerVisualFeedback("bg-[#06D001]", successSound);
+//             playRandomMessageSound(checkOutMessages);
+//           }
+//         }
+//         addLogEntry(decodedCode, currentStudentName);
+//       } else {
+//         console.log("No document found for this student ID");
+//         triggerVisualFeedback("bg-[#FF0000]", errorSound);
+//         return;
+//       }
+//     } catch (error) {
+//       console.error("Error updating attendance: ", error);
+//       triggerVisualFeedback("bg-[#FF0000]", errorSound);
+//     }
+//   };
+
+
+//   const handleResult = (result) => {
+//     if (!!result && !isProcessing) {
+//       const code = result.text;
+//       console.log(`QR code detected: ${code}`);
+//       const decodedCode = code
+//         .split("")
+//         .map((char) => mappingTable[char] || "")
+//         .join("");
+
+//       if (!decodedCode.startsWith("mvba_")) {
+//         console.log("Invalid code");
+//         triggerVisualFeedback("bg-[#FF0000]", errorSound);
+//         return;
+//       }
+
+//       const processedCode = decodedCode.slice(5);
+
+//       if (!scannedCodesRef.current.has(processedCode)) {
+//         console.log(`New QR code scan: ${processedCode}`);
+//         setData(processedCode);
+//         scannedCodesRef.current.add(processedCode);
+//         setIsProcessing(true); // Set the processing flag
+
+//         const isCheckIn = checkMode(); // Update to use checkMode function
+//         updateAttendance(processedCode, isCheckIn)
+//           .finally(() => {
+//             setIsProcessing(false); // Reset the processing flag when done
+//           });
+
+//         setCurrentDecodedCode(processedCode);
+
+//         if (delayTimerRef.current) {
+//           clearTimeout(delayTimerRef.current);
+//           delayTimerRef.current = null;
+//         }
+
+//         delayTimerRef.current = setTimeout(() => {
+//           delayTimerRef.current = null;
+//         }, 3000);
+//       } else {
+//         console.log("Already scanned this code");
+//         const now = Date.now();
+//         if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
+//           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
+//           lastPlayedRef.current = now;
+//         }
+//       }
+//     }
+//   };
+
+
+//   const addLogEntry = (processedCode, studentName) => {
+//     const newLogEntry = {
+//       id: processedCode,
+//       time: new Date().toLocaleTimeString("en-US", {
+//         hour: "2-digit",
+//         minute: "2-digit",
+//         second: "2-digit",
+//       }),
+//       studentName: studentName,
+//     };
+//     console.log("New Log Entry:", newLogEntry);
+//     setLog((prevLog) => [newLogEntry, ...prevLog.slice(0, 9)]);
+//   };
+
+//   const handleScanError = (error) => {
+//     console.error("QR Scan Error:", error);
+//     triggerVisualFeedback("bg-[#FF0000]", errorSound);
+//   };
+
+//   const handleEmailSent = () => {
+//     setEmailData({ shouldSend: false, decodedCode: "", studentName: "" });
+//   };
+
+//   const playSound = (sound) => {
+//     const audio = new Audio(sound);
+//     audio.play();
+//   };
+
+//   const triggerVisualFeedback = (color, sound) => {
+//     setBackgroundColor(color);
+//     playSound(sound);
+//     setTimeout(() => setBackgroundColor("bg-gray-100"), 1000);
+//   };
+
+//   const playRandomMessageSound = (messages) => {
+//     const randomIndex = Math.floor(Math.random() * messages.length);
+//     const randomSound = messages[randomIndex];
+//     playSound(randomSound);
+//   };
+
+//   return (
+//     <div
+//       className={`${backgroundColor} flex flex-col lg:flex-row items-center overflow-hidden justify-center min-h-screen p-6 `}>
+//       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full mb-6 lg:mb-0 lg:mr-6 transition-transform transform hover:scale-105">
+//         <QrReader
+//           onResult={handleResult}
+//           onError={handleScanError}
+//           constraints={{ facingMode: "environment" }}
+//           style={{ width: "100%", height: "100%", borderRadius: "8px" }}
+//         />
+//       </div>
+//       <div className="bg-white rounded-lg shadow-lg p-8 w-full lg:w-1/2 h-full flex flex-col items-center transition-transform transform hover:scale-105">
+//         <div className="flex flex-col items-center justify-center mb-6">
+//           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+//             <p
+//               className={`text-lg font-semibold ${
+//                 isCheckInMode ? "text-green-600" : "text-red-600"
+//               }`}>
+//               {isCheckInMode ? "Check-In Mode" : "Check-Out Mode"}
+//             </p>
+//           </div>
+//         </div>
+
+//         <div className="flex flex-col items-center justify-center mb-6">
+//           <p className="text-xl font-bold text-gray-800 mb-2">Scan Result:</p>
+//           <div className="flex items-center justify-center bg-gray-50 rounded-lg shadow-md p-4 w-full">
+//             <p className="text-lg text-blue-600 font-semibold">
+//               {data} {studentName && `(${studentName})`}
+//             </p>
+//           </div>
+//         </div>
+
+//         <div
+//           className="bg-gray-50 rounded-lg shadow-lg mt-6 w-full overflow-y-scroll"
+//           style={{ maxHeight: "300px" }}>
+//           <ul className="text-gray-700 divide-y divide-gray-300 w-full">
+//             {log.map((entry, index) => (
+//               <li key={`${entry.id}-${index}`} className="py-4 px-6">
+//                 <span className="block text-lg font-semibold">
+//                   {entry.time}
+//                 </span>
+//                 <span className="block text-sm">{entry.studentName}</span>
+//               </li>
+//             ))}
+//           </ul>
+//         </div>
+
+//         {emailData.shouldSend && (
+//           <Email
+//             studentName={emailData.studentName}
+//             decodedCode={emailData.decodedCode}
+//             onEmailSent={handleEmailSent}
+//           />
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+// export default Scan;
 
 
 
