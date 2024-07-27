@@ -76,7 +76,7 @@ const SignIn = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 bg-gray-100 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0587be]"
-            />
+            />  
             <button
               type="button"
               onClick={togglePasswordVisibility}
