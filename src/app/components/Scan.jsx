@@ -12,6 +12,8 @@ import {
   checkOutMessages,
   playSound,
   playRandomMessageSound,
+  playRandomConfirmation,
+  confirmationMessages
 } from "./MessagePlayer";
 
 function Scan() {
@@ -124,35 +126,39 @@ function Scan() {
 
         if (isCheckIn) {
           if (!attendance[dateStr]) {
+            triggerVisualFeedback("bg-[#06D001]", successSound);
             attendance[dateStr] = { checkIn: nowStr, checkOut: null };
             await updateDoc(userDocRef, { attendance });
             console.log("Check-in successful");
             setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
-            triggerVisualFeedback("bg-[#06D001]", successSound);
             playRandomMessageSound(checkInMessages);
+            // playRandomConfirmation(confirmationMessages);
           } else {
             console.log("Already checked in for today");
           }
         } else {
           if (attendance[dateStr]) {
             if (!attendance[dateStr].checkOut) {
+              triggerVisualFeedback("bg-[#06D001]", successSound);
               attendance[dateStr].checkOut = nowStr;
               await updateDoc(userDocRef, { attendance });
               console.log("Checkout successful");
               setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
-              triggerVisualFeedback("bg-[#06D001]", successSound);
               playRandomMessageSound(checkOutMessages);
+              // playRandomConfirmation(confirmationMessages);
             } else {
               console.log("Already checked out");
             }
           } else {
             // No check-in recorded but it's check-out time, record check-out
+            triggerVisualFeedback("bg-[#06D001]", successSound);
             attendance[dateStr] = { checkIn: null, checkOut: nowStr };
             await updateDoc(userDocRef, { attendance });
             console.log("No check-in recorded but check-out successful");
             setEmailData({ shouldSend: true, decodedCode, studentName: currentStudentName });
-            triggerVisualFeedback("bg-[#06D001]", successSound);
             playRandomMessageSound(checkOutMessages);
+            // playRandomConfirmation(confirmationMessages);
+
           }
         }
         // Add the log entry with the current student's name
@@ -204,11 +210,11 @@ function Scan() {
         // Start a new delay timer
         delayTimerRef.current = setTimeout(() => {
           delayTimerRef.current = null;
-        }, 3000); // Set delay for 3 seconds
+        }, 5000); // Set delay for 3 seconds
       } else {
         console.log("Already scanned this code");
         const now = Date.now();
-        if (!delayTimerRef.current && now - lastPlayedRef.current >= 1500) {
+        if (!delayTimerRef.current && now - lastPlayedRef.current >= 2000) {
           triggerVisualFeedback("bg-[#FFCC00]", alreadyScannedSound);
           lastPlayedRef.current = now;
         }
