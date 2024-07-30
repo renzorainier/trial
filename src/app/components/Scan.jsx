@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase.js";
-import { mappingTable, getPhilippineTime } from "./Constants";
-import Email from "./Email"; // Import the Email component
+import { mappingTable, getPhilippineTime } from "./Constants.js";
+import Email from "./Email.jsx"; // Import the Email component
 import {
   successSound,
   errorSound,
@@ -14,7 +14,7 @@ import {
   playRandomMessageSound,
   playRandomConfirmation,
   confirmationMessages
-} from "./MessagePlayer";
+} from "./MessagePlayer.js";
 
 function Scan() {
   // State Hooks
@@ -178,6 +178,8 @@ function Scan() {
     if (!!result) {
       const code = result.text;
       const decodedCode = code.split("").map((char) => mappingTable[char] || "").join("");
+
+      // console.log(decodedCode);
 
       if (!decodedCode.startsWith("mvba_")) {
         console.log("Invalid code");

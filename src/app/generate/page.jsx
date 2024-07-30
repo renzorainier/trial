@@ -1,5 +1,6 @@
 
 "use client"
+// generate.js
 import React, { useState } from "react";
 import QRCode from "react-qr-code";
 
@@ -73,7 +74,7 @@ function Generate() {
   const [qrCodeValue, setQrCodeValue] = useState("");
 
   const transformValue = (value) => {
-    let transformedValue = "";
+    let transformedValue = "utqh_";
     for (let i = 0; i < value.length; i++) {
       const char = value[i];
       if (mappingTable.hasOwnProperty(char)) {
@@ -152,6 +153,8 @@ function Generate() {
 }
 
 export default Generate;
+
+
 
 
 
